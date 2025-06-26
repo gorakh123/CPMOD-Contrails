@@ -25,6 +25,7 @@ module pbe_mod
 ! Modified 07/05/2017
 ! Modified 31/05/2017
 ! Modified 14/07/2020
+! Modified Gorakh Adhikari 26/06/2025 -> includes common variables for contrails
 !
 !**********************************************************************************************
 
@@ -56,9 +57,23 @@ end module pbe_mod
 
 !**********************************************************************************************
 
-
+module con_mod
 
 !**********************************************************************************************
+!
+! Declaration of common variables related to contrail code
+! 
+! By Gorakh Adhikari
+! 26/06/2025
+!
+!**********************************************************************************************
+
+double precision amb_temp, amb_p, amb_rho, amb_RH
+double precision x_m, tau_m, r_0, epsilon
+double precision initial_temp, initial_velocity
+double precision T ! Need to decide how the water coupling is going to be done
+
+end module con_mod
 
 module agg_cfv_mod
 
@@ -207,7 +222,43 @@ end subroutine pbe_read
 
 !**********************************************************************************************
 
+subroutine contrail_read()
 
+!**********************************************************************************************
+!
+! Read contrail.in file
+!
+! Gorakh Adhikari 26/06/2025
+!
+!**********************************************************************************************
+
+use con_mod
+! amb_temp, amb_p, amb_rho, amb_RH
+! x_m, tau_m, r_0, epsilon
+! initial_temp, initial_velocity
+! T
+
+implicit none 
+
+integer i 
+
+!**********************************************************************************************
+
+! Read contrail input parameters 
+
+open(40, file='psr/contrail.in')
+do i=1,2
+  read(30,*)
+end do
+read(40,*) amb_p
+read(40,*) amb_temp
+read(40,*) amb_RH
+read(40,*) r_0
+read(40,*) initial_velocity
+read(40,*) initial_temp
+close(40)
+
+end subroutine contrail_read
 
 !**********************************************************************************************
 
