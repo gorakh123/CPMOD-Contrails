@@ -20,7 +20,8 @@ double precision int_time,tin,current_time,meansize,dt
 integer i,i_step,n_steps,iflag,flowflag,nin,i_write,n_write,i_writesp
 integer agg_kernel_update,n_pbe_grid
 
-!TEST contrail_plume_output
+! TEST variables
+double precision Temperature, Pw, RH, rho, time
 
 !**********************************************************************************************
 
@@ -31,6 +32,13 @@ call pbe_read(n_pbe_grid)
 allocate(ni(n_pbe_grid))
 call pbe_grid()
 call pbe_init(ni)
+
+! Test variables
+Temperature = 100
+Pw = 1000
+RH = 1.4
+rho = 1200
+time = 22
 
 ! Read PSR input data
 open(30,file='psr/psr.in')
@@ -57,7 +65,7 @@ i_write = 0
 call PBE_moments(ni,moment,meansize)
 
 do i_step = 1,n_steps
-
+  call contrail_plume_output(Temperature, Pw, RH, rho, time)
   ! The following should be done if the kernel should be updated at each time step due to e.g. 
   ! temperature dependency
   if (agg_kernel_update==1) then
