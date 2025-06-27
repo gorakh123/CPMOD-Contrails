@@ -59,13 +59,15 @@ i_write = 0
 
 !----------------------------------------------------------------------------------------------
 
+open(22, file='pbe/plume_variables.out')
+
 ! Integration
 
 ! Write initial moments
 call PBE_moments(ni,moment,meansize)
 
 do i_step = 1,n_steps
-  call contrail_plume_output(Temperature, Pw, RH, rho, time)
+  write(22, *) Temperature, Pw, RH, rho, time
   ! The following should be done if the kernel should be updated at each time step due to e.g. 
   ! temperature dependency
   if (agg_kernel_update==1) then
@@ -93,6 +95,7 @@ do i_step = 1,n_steps
 end do
 
 !----------------------------------------------------------------------------------------------
+close(22)
 
 ! Deallocate arrays
 deallocate(ni)

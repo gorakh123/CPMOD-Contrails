@@ -612,30 +612,6 @@ end subroutine pbe_output
 
 !**********************************************************************************************
 
-subroutine contrail_plume_output(T, pw, S, rho, time)
-
-!**********************************************************************************************
-!
-! Outputs contrail plume properties:
-! T - Temperature, pw - Partial pressure of water vapour
-! S - Saturation ratio, rho - Plume density
-!
-! By Gorakh Adhikari 26/06/2025
-!
-!**********************************************************************************************
-
-implicit none 
-
-double precision, intent(in) :: T, pw, S, rho, time
-
-!**********************************************************************************************
-
-open(11, file='pbe/plume_variables.out', status='replace', action='write')
-write(11,*) T, pw, S, rho, time
-close(11)
-
-end subroutine contrail_plume_output
-
 subroutine pbe_deallocate()
 
 !**********************************************************************************************
