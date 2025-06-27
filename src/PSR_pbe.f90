@@ -10,18 +10,20 @@ subroutine psr_pbe()
 !
 !**********************************************************************************************
 
+use con_mod
+
 implicit none
 
 double precision, allocatable :: ni(:)
 
 double precision moment(0:1)
-double precision int_time,tin,current_time,meansize,dt
+double precision int_time,tin,meansize,dt
 
 integer i,i_step,n_steps,iflag,flowflag,nin,i_write,n_write,i_writesp
 integer agg_kernel_update,n_pbe_grid
 
 ! TEST variables
-double precision Temperature, Pw, RH, rho, time
+! double precision Temperature, Pw, RH, rho, time
 
 !**********************************************************************************************
 
@@ -32,13 +34,6 @@ call pbe_read(n_pbe_grid)
 allocate(ni(n_pbe_grid))
 call pbe_grid()
 call pbe_init(ni)
-
-! Test variables
-Temperature = 100
-Pw = 1000
-RH = 1.4
-rho = 1200
-time = 22
 
 ! Read PSR input data
 open(30,file='psr/psr.in')
@@ -51,6 +46,9 @@ read(30,*) agg_kernel_update
 read(30,*) i_writesp
 read(30,*) n_write
 close(30)
+
+! Read contrail input data
+call contrail_read()
 
 ! Initialise PSR integration
 n_steps = int_time/dt
@@ -66,8 +64,13 @@ open(22, file='pbe/plume_variables.out')
 ! Write initial moments
 call PBE_moments(ni,moment,meansize)
 
+! initialise tau_m
+call set_mixing_timescale()
 do i_step = 1,n_steps
-  write(22, *) Temperature, Pw, RH, rho, time
+  
+  ! update contrail plume variables
+  call update_plume_variables()
+  write(22, *) T, Pw, amb_RH, amb_rho, current_time
   ! The following should be done if the kernel should be updated at each time step due to e.g. 
   ! temperature dependency
   if (agg_kernel_update==1) then

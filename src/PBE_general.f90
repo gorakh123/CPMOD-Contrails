@@ -72,6 +72,7 @@ double precision amb_temp, amb_p, amb_rho, amb_RH
 double precision x_m, tau_m, r_0, epsilon
 double precision initial_temp, initial_velocity
 double precision T, pw, S, rho ! Need to decide how the water coupling is going to be done
+double precision current_time
 
 end module con_mod
 
@@ -233,10 +234,6 @@ subroutine contrail_read()
 !**********************************************************************************************
 
 use con_mod
-! amb_temp, amb_p, amb_rho, amb_RH
-! x_m, tau_m, r_0, epsilon
-! initial_temp, initial_velocity
-! T
 
 implicit none 
 
@@ -248,7 +245,7 @@ integer i
 
 open(40, file='psr/contrail.in')
 do i=1,2
-  read(30,*)
+  read(40,*)
 end do
 read(40,*) amb_p
 read(40,*) amb_temp

@@ -20,11 +20,12 @@ MODPBE = PBE_general.o PBE_discrete.o
 MAIN = CPMOD_pbe.o
 PBE = PBE_solver.o PBE_growth.o PBE_agg.o PBE_agg_kernels.o \
 PBE_test.o PBE_frag.o
+CON = CON_plume_dynamics.o
 PSR = PSR_pbe.o
 
 # Compilation order
 MODULES= $(MODPBE)
-OBJECTS= $(MODULES) $(MAIN) $(PBE) $(PSR)
+OBJECTS= $(MODULES) $(MAIN) $(CON) $(PBE) $(PSR)
 
 # Make options
 all: $(EXE)
