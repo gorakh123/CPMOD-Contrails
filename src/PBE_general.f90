@@ -71,7 +71,7 @@ module con_mod
 double precision amb_temp, amb_p, amb_rho, amb_RH
 double precision x_m, tau_m, r_0, epsilon
 double precision initial_temp, initial_velocity
-double precision T ! Need to decide how the water coupling is going to be done
+double precision T, pw, S, rho ! Need to decide how the water coupling is going to be done
 
 end module con_mod
 
@@ -612,9 +612,29 @@ end subroutine pbe_output
 
 !**********************************************************************************************
 
-
+subroutine contrail_plume_output(T, pw, S, rho, time)
 
 !**********************************************************************************************
+!
+! Outputs contrail plume properties:
+! T - Temperature, pw - Partial pressure of water vapour
+! S - Saturation ratio, rho - Plume density
+!
+! By Gorakh Adhikari 26/06/2025
+!
+!**********************************************************************************************
+
+implicit none 
+
+double precision, intent(in) :: T, pw, S, rho, time
+
+!**********************************************************************************************
+
+open(11, file='pbe/plume_variables.out', status='replace', action='write')
+write(11,*) T, pw, S, rho, time
+close(11)
+
+end subroutine contrail_plume_output
 
 subroutine pbe_deallocate()
 

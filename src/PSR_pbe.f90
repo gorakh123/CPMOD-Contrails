@@ -20,6 +20,8 @@ double precision int_time,tin,current_time,meansize,dt
 integer i,i_step,n_steps,iflag,flowflag,nin,i_write,n_write,i_writesp
 integer agg_kernel_update,n_pbe_grid
 
+!TEST contrail_plume_output
+
 !**********************************************************************************************
 
 ! Initialisation

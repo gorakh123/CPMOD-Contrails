@@ -1,6 +1,6 @@
 PBE INPUT DATA
 
-5                               ! Aggregation kernel
+0                               ! Aggregation kernel
 1.                              ! Aggregation kernel constant
 0                               ! Nucleation range (0 for no nucleation)
 0.                              ! Nucleation rate
@@ -34,6 +34,7 @@ Growth models:
 0. No growth
 1. Size-independent
 2. Power-law
+3. Contrail growth (TBD)
 
 Fragmentation:
 Set fragmentation rate constant to 0. for no fragmentation
@@ -46,6 +47,7 @@ Grid types:
 Initial distributions:
 1: Zero
 2: Top hat
+3: Geometric (for Contrails) (TBD)
 
 Nucleation range:
 - 0 for no nucleation
