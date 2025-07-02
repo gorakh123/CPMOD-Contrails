@@ -2,7 +2,12 @@ Input data for Contrails
 
 18753.93                            ! Ambient pressure [Pa]
 225.15                              ! Ambient temperature [K]
-1.6                                 ! Relative Humidity [-]
+1.6                                 ! Ambient Relative Humidity w.r.t ice [-]
 0.018                               ! Jet diameter [m]
 96.4                                ! Jet initial velocity [m/s]
 363.15                              ! Jet initial temperature [K]
+
+1.6                                 ! Standard deviation of Soot particles
+15                                  ! Geometric mean radius of Soot particles
+
+

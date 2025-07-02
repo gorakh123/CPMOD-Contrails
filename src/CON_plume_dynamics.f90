@@ -34,7 +34,7 @@ end subroutine set_mixing_timescale
 
 !**********************************************************************************************
 
-subroutine update_plume_variables()
+subroutine update_plume_variables(time)
 
 !**********************************************************************************************
 ! 
@@ -57,12 +57,13 @@ implicit none
 
 double precision dilution 
 double precision beta
+double precision, intent(in) :: time
 
 beta = 0.9 
 
-if (current_time > tau_m) then
+if (time > tau_m) then
 
-    dilution = (tau_m/current_time) ** beta
+    dilution = (tau_m/time) ** beta
     T = amb_temp + (initial_temp - amb_temp) * dilution
 
 else

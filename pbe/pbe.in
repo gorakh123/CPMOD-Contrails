@@ -10,15 +10,15 @@ PBE INPUT DATA
 0                               ! Mass-conservative growth discretisation
 0.                              ! Fragmentation rate constant
 3                               ! Order of Gaussian quadrature (for fragmentation)
-1                               ! Grid type
-80                              ! Number of grid points
-0.05                            ! Minimum size in grid
-1.E4                            ! Maximum size in grid
+2                               ! Grid type
+150                              ! Number of grid points
+0.000                            ! Minimum size in grid
+8.E1                            ! Maximum size in grid
 1.                              ! Volume of nuclei
-2                               ! Initial distribution
+3                               ! Initial distribution
 1                               ! First non-zero interval for top-hat distribution
 1                               ! Second non-zero interval for top-hat distribution
-1.                              ! Value for initialising number density
+1000.d0                              ! Value for initialising number density
 1                               ! Integration method
 
 Aggregation kernels:
@@ -47,7 +47,7 @@ Grid types:
 Initial distributions:
 1: Zero
 2: Top hat
-3: Geometric (for Contrails) (TBD)
+3: Log-normal (for Contrails) (TBD)
 
 Nucleation range:
 - 0 for no nucleation

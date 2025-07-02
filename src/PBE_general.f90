@@ -71,9 +71,10 @@ module con_mod
 double precision amb_temp, amb_p, amb_rho, amb_RH
 double precision x_m, tau_m, r_0, epsilon
 double precision initial_temp, initial_velocity
-double precision T, pw, S, rho ! Need to decide how the water coupling is going to be done
-double precision current_time
+double precision T, pw, si, sw, rho ! Need to decide how the water coupling is going to be done
+double precision mean_radius, std_radius, mean_v, std_v
 
+double precision :: pi = acos(-1.d0)
 end module con_mod
 
 module agg_cfv_mod
@@ -253,6 +254,9 @@ read(40,*) amb_RH
 read(40,*) r_0
 read(40,*) initial_velocity
 read(40,*) initial_temp
+read(40,*)
+read(40,*) mean_radius
+read(40,*) std_radius
 close(40)
 
 end subroutine contrail_read
@@ -269,12 +273,14 @@ subroutine pbe_init(ni)
 ! Modified 06/05/2017
 ! Modified 25/06/2020
 ! Modified 14/07/2020
+! Modified 30/06/2025 by Gorakh - includes a lognormal distribution
 !
 !**********************************************************************************************
 
 use pbe_mod
 use frag_cfv_mod
 use gauss_mod
+use con_mod
 
 implicit none
 
@@ -314,6 +320,20 @@ else if (initdis==2) then
   ! Top hat
   ni = 0.D0
   ni(n_th1:n_th2) = N0
+else if (initdis==3) then
+  ! Log normal
+  !mean_v = (4.d0 * pi) / 3.d0 * mean_radius**3
+
+  !ni = (N0 / (3.d0 * v_m * sqrt(2.d0 * pi) * log(std_radius))) * exp((- log(v_m / mean_v)**2) / (18.d0 * log(std_radius)**2)) * dv
+  do i = 1, m
+    ni(i) = exp(-0.5d0 * (log(v_m(i)/mean_radius) ** 2) /(log(std_radius)**2)) / (v_m(i) * log(std_radius) * sqrt(2.d0 * pi)) 
+    !write(*,*) exp(-0.5d0 * ((log(v_m(i)) - log(mean_radius)) ** 2) /(log(std_radius)**2))
+    !write(*,*) 1.d0 / (v_m(i) * log(std_radius) * sqrt(2.d0 * pi)) 
+    
+  end do
+
+!write(*,*) ni
+
 end if
 
 end subroutine pbe_init
@@ -608,6 +628,60 @@ end if
 end subroutine pbe_output
 
 !**********************************************************************************************
+
+subroutine plume_var_output(unit, time)
+
+!**********************************************************************************************
+! Outputs plume variables: T, pw, ambient RH_w, ambient density and time step
+!
+! By Gorakh Adhikari
+! Created 30/06/25
+!**********************************************************************************************
+
+use con_mod
+use pbe_mod
+
+implicit none
+
+integer, intent(in) :: unit
+double precision, intent(in) :: time
+
+write(unit, *) T, pw, amb_RH, amb_rho, time
+
+end subroutine plume_var_output
+
+
+!**********************************************************************************************
+
+subroutine con_output(ni)
+
+!**********************************************************************************************
+! Outputs contrail related data
+!
+! By Gorakh Adhikari
+! Created 30/06/25
+!**********************************************************************************************
+
+use pbe_mod
+
+implicit none
+
+integer i
+double precision, dimension(m), intent(in) :: ni
+
+
+open(23,file='pbe/initial_log_norm_distribution.out')
+do i=1,m
+  write(23,1002) v_m(i), ni(i)
+end do
+
+close(23)
+1002 format(F12.8,1X,F12.8)
+end subroutine con_output
+
+
+
+
 
 subroutine pbe_deallocate()
 
