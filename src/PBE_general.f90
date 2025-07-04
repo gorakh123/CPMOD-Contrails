@@ -68,13 +68,61 @@ module con_mod
 !
 !**********************************************************************************************
 
-double precision amb_temp, amb_p, amb_rho, amb_RH
+double precision amb_temp, amb_p, amb_rho, amb_pw, amb_Si
 double precision x_m, tau_m, r_0, epsilon
 double precision initial_temp, initial_velocity
-double precision T, pw, si, sw, rho ! Need to decide how the water coupling is going to be done
+double precision T, p_wsat, p_isat, smi, smw, sw, si, rho, G ! Need to decide how the water coupling is going to be done
 double precision mean_radius, std_radius, mean_v, std_v
 
 double precision :: pi = acos(-1.d0)
+
+contains
+
+  pure function sat_pressure_w_func(T) result(sat_pressure_w)
+
+!**********************************************************************************************
+!
+! Function to determine water vapour partial pressure at liquid water saturation following
+! Murphy & Koop 2005
+! 
+! By Gorakh Adhikari
+! 26/06/2025
+!
+!**********************************************************************************************
+
+    implicit none
+
+    double precision, intent(in) :: T 
+    double precision sat_pressure_w
+
+    sat_pressure_w = exp(54.842763d0 - (6763.22d0 / T) - (4.210d0 * log(T)) + &
+                        0.000367d0 * T + tanh(0.0415d0 * (T - 218.8d0)) * &
+                        (53.878d0 - (1331.22d0 / T) - (9.44523d0 * log(T)) + &
+                          0.014025d0 * T))
+    
+  end function sat_pressure_w_func
+
+  pure function sat_pressure_i_func(T) result(sat_pressure_i)
+
+!**********************************************************************************************
+!
+! Function to determine water vapour partial pressure at ice saturation following
+! Murphy & Koop 2005
+! 
+! By Gorakh Adhikari
+! 26/06/2025
+!
+!**********************************************************************************************
+
+    implicit none 
+
+    double precision, intent(in) :: T
+    double precision sat_pressure_i
+
+    sat_pressure_i = exp( 9.550426d0 - (5723.265d0 / T) + (3.53068d0 * log(T)) - (0.00728332d0 * T))
+
+  end function sat_pressure_i_func
+
 end module con_mod
 
 module agg_cfv_mod
@@ -250,14 +298,17 @@ do i=1,2
 end do
 read(40,*) amb_p
 read(40,*) amb_temp
-read(40,*) amb_RH
+read(40,*) amb_Si
 read(40,*) r_0
 read(40,*) initial_velocity
 read(40,*) initial_temp
+read(40,*) G
 read(40,*)
 read(40,*) mean_radius
 read(40,*) std_radius
 close(40)
+
+write(*,*) 'Si:', amb_Si
 
 end subroutine contrail_read
 
@@ -285,7 +336,7 @@ use con_mod
 implicit none
 
 double precision, dimension(m), intent(inout) :: ni
-
+double precision :: n_total
 
 integer i
 
@@ -322,16 +373,21 @@ else if (initdis==2) then
   ni(n_th1:n_th2) = N0
 else if (initdis==3) then
   ! Log normal
-  !mean_v = (4.d0 * pi) / 3.d0 * mean_radius**3
-
+  mean_v = (((4.d0 * pi) / 3.d0) * mean_radius**3) 
+  std_v = (std_radius**3) 
+n_total = 0
   !ni = (N0 / (3.d0 * v_m * sqrt(2.d0 * pi) * log(std_radius))) * exp((- log(v_m / mean_v)**2) / (18.d0 * log(std_radius)**2)) * dv
   do i = 1, m
-    ni(i) = exp(-0.5d0 * (log(v_m(i)/mean_radius) ** 2) /(log(std_radius)**2)) / (v_m(i) * log(std_radius) * sqrt(2.d0 * pi)) 
+    ni(i) = N0 * exp(-0.5d0 * (log(v_m(i)/mean_v) ** 2) /(log(std_v)**2)) / (v_m(i) * log(std_v) * sqrt(2.d0 * pi)) * dv(i)
     !write(*,*) exp(-0.5d0 * ((log(v_m(i)) - log(mean_radius)) ** 2) /(log(std_radius)**2))
     !write(*,*) 1.d0 / (v_m(i) * log(std_radius) * sqrt(2.d0 * pi)) 
-    
+    n_total = n_total + ni(i)
   end do
-
+write(*,*) 'total n: ', n_total
+write(*,*) 'mean radius', mean_radius
+write(*,*) 'mean volume: ', mean_v
+write(*,*) 'sigma radius', std_radius
+write(*,*) 'sigma volume', std_v
 !write(*,*) ni
 
 end if
@@ -646,14 +702,14 @@ implicit none
 integer, intent(in) :: unit
 double precision, intent(in) :: time
 
-write(unit, *) T, pw, amb_RH, amb_rho, time
+write(unit, *) T, smw, amb_rho, time, amb_pw, p_wsat, smw*p_wsat
 
 end subroutine plume_var_output
 
 
 !**********************************************************************************************
 
-subroutine con_output(ni)
+subroutine con_output(nsoot, nwater, nice, unit, time)
 
 !**********************************************************************************************
 ! Outputs contrail related data
@@ -663,20 +719,21 @@ subroutine con_output(ni)
 !**********************************************************************************************
 
 use pbe_mod
+use con_mod, only: sw
 
 implicit none
 
-integer i
-double precision, dimension(m), intent(in) :: ni
+integer i, unit
+double precision time
+double precision, dimension(m), intent(in) :: nsoot
+double precision, dimension(m), intent(in) :: nwater
+double precision, dimension(m), intent(in) :: nice
 
-
-open(23,file='pbe/initial_log_norm_distribution.out')
 do i=1,m
-  write(23,1002) v_m(i), ni(i)
+  write(unit,1002) v_m(i), nsoot(i), nwater(i), nice(i), sw, time
 end do
 
-close(23)
-1002 format(F12.8,1X,F12.8)
+1002 format(F12.2,1X,F12.2,1X,F12.2,1X,F12.2,1X,F10.6,1X,F6.4)
 end subroutine con_output
 
 

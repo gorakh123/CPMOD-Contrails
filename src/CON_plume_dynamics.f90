@@ -29,7 +29,7 @@ epsilon = 0.0285
 x_m = r_0 * sqrt(2 / epsilon)
 tau_m = x_m / initial_velocity
 
-! print *, 'taum = ', tau_m
+write(*,*) 'tau_m (s):', tau_m
 end subroutine set_mixing_timescale
 
 !**********************************************************************************************
@@ -70,7 +70,60 @@ else
 
     T = initial_temp 
     dilution = 1
-
-end if
     
+end if
+
+p_wsat = sat_pressure_w_func(T)
+p_isat = sat_pressure_i_func(T)
+
+amb_pw = amb_Si * sat_pressure_i_func(amb_temp)
+
+smw = ((amb_pw + G * (T - amb_temp)) / p_wsat) - 1
+
+sw = smw 
+
 end subroutine update_plume_variables
+
+!**********************************************************************************************
+
+subroutine droplet_activation(nsoot, nwater)
+
+!**********************************************************************************************
+!
+! Subroutine determines the soot particles that can activate
+! Following from the activation equation outlined in Karcher et al 2015
+!
+! TODO: implement a newton-rhapson method for the activation
+!
+! By Gorakh Adhikari 03/07/25
+!
+!**********************************************************************************************
+
+use pbe_mod, only: m, v_m     
+use con_mod
+
+implicit none
+
+double precision, dimension(m), intent(inout) :: nsoot
+double precision, dimension(m), intent(inout) :: nwater 
+
+double precision :: activation_radius, kelvin_radius, activation_vol
+double precision :: kappa
+
+integer :: i
+
+kelvin_radius = 1 ! [nm]
+kappa = 0.005
+activation_radius = (kelvin_radius / (54.d0 * kappa)**(1.d0/3.d0)) * (sw ** (-2.d0/3.d0))
+activation_vol = ((4.d0 * pi) / 3 ) * activation_radius**3
+
+do i = 1, m
+
+    if ((v_m(i) >= activation_vol).AND.(sw >= 0)) then
+        nwater(i) = nwater(i) + nsoot(i)
+        nsoot(i) = 0.d0 
+    end if
+
+end do 
+
+end subroutine droplet_activation
