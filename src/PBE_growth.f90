@@ -8,7 +8,7 @@
 
 !**********************************************************************************************
 
-subroutine growth_tvd(ni,index,growth_source)
+subroutine growth_tvd(ni,index,growth_source, w_or_i, Jw_l, Jw_r, n_satw)
 
 !**********************************************************************************************
 !
@@ -21,13 +21,18 @@ subroutine growth_tvd(ni,index,growth_source)
 
 use pbe_mod
 
+use con_mod, Only: T, amb_p, pi, sat_pressure_w_func, sw
+
 implicit none
 
 double precision, dimension(m), intent(in) :: ni
 integer, intent(in)                        :: index
 double precision, intent(out)              :: growth_source
 
-double precision :: G_terml,G_termr,phi
+double precision :: phi
+double precision :: g_terml
+double precision :: g_termr
+
 double precision :: gnl,gnr           !< (G*N) at left surface and right surface
 double precision :: nl                !< Number density in left cell
 double precision :: nll               !< Number density in left-left cell
@@ -40,7 +45,32 @@ double precision :: rl,rr             !< r+ at left and right surface
 parameter(eps = 1.D1*epsilon(1.D0))
 
 !**********************************************************************************************
+!Contrail variables
 
+integer, intent(in) :: w_or_i         ! Parameter determines wether water (1) or ice (0) growth is used
+
+double precision, intent(out) :: Jw_r
+double precision, intent(out) :: Jw_l
+double precision :: volH20 = 0.03d0 ! in nm**3 
+double precision :: alpha_w = 1.d0
+double precision :: radius_water_r, radius_water_l
+double precision :: thermal_speed
+double precision, intent(out) :: n_satw
+double precision :: diffusion_coef
+double precision :: kB = 1.380649d0 * 10.d0**(-23)
+double precision :: massH20 = 2.99d0 * 10.d0**(-26)
+
+!**********************************************************************************************
+
+radius_water_r = (v(index) * (3.d0 / (4.d0 * pi))) ** (1.d0 / 3.d0 ) * 10.d0**(-9) !m
+radius_water_l = (v(index-1) * (3.d0 / (4.d0 * pi))) ** (1.d0 / 3.d0 ) * 10.d0**(-9)
+
+thermal_speed = sqrt( (8 * kB * T) / (massH20)) ! m/s might need to change to nm/s
+n_satw = sat_pressure_w_func(T) / (kB * T)
+diffusion_coef = (2.66d0 * 10.d0 ** (-5)) * (T / 298.15d0)**(1.81d0) * (1.01325 * 10**5) / (amb_p) ! units m^2/s
+
+Jw_r = (pi * radius_water_r**2 * alpha_w * thermal_speed * n_satw * sw) / (1 + (alpha_w * thermal_speed * radius_water_r) / (4 * diffusion_coef))
+Jw_l = (pi * radius_water_l**2 * alpha_w * thermal_speed * n_satw * sw) / (1 + (alpha_w * thermal_speed * radius_water_l) / (4 * diffusion_coef))
 !Only growth to the right present at nucleation interval
 
 if (growth_function==1) then
@@ -55,6 +85,11 @@ else if (growth_function==2) then
   g_termr = g_coeff1*(v(index)**g_coeff2)
   g_terml = g_coeff1*(v(index-1)**g_coeff2)
 
+else if (growth_function==3.AND.w_or_i==1) then
+
+  g_termr = Jw_r * volH20 ! units [nm**3/s]
+  g_terml = Jw_l * volH20
+
 end if
 
 !----------------------------------------------------------------------------------------------
@@ -62,7 +97,7 @@ end if
 !                population balances in crystallization
 !----------------------------------------------------------------------------------------------
 
-if (g_coeff1>0.D0) then
+if ((sw>0.d0).AND.(g_termr >=0).AND.(g_terml>=0)) then
 
   ! growth rate is along positive direction
   if (index==1) then
@@ -99,46 +134,6 @@ if (g_coeff1>0.D0) then
       gnl = g_terml * (nc + 0.5 * phi * (nc - nl))
     end if
   end if
-
-else
-
-  ! growth rate is along negative direction
-  if (index==1) then
-
-    gnl = g_terml * (ni(1) + 0.5 * (ni(1) - ni(2)))
-    rr = (ni(1) - ni(2) + eps) / (ni(2) - ni(3) + eps)
-    phi = max(0.0d0, min(2.0d0 * rr, min((1.0d0 + 2.0d0 * rr) / 3.0d0, 2.0d0)))
-    gnr = g_termr * (ni(2) + 0.5 * phi * (ni(2) - ni(3)))
-
-  else if (index==m) then
-
-    gnr = 0
-    gnl = g_terml * 0.5 * (ni(m)+ni(m-1))
-
-  else
-
-    ! Fluxes at cell right surface
-    if (index==m-1) then
-      gnr = g_termr * 0.5 * (ni(m)+ni(m-1))
-    else
-      nl = ni(index)
-      nc = ni(index+1)
-      nr = ni(index+2)
-      rr = (nl - nc + eps) / (nc - nr + eps)
-      phi = max(0.0d0, min(2.0d0 * rr, min((1.0d0 + 2.0d0 * rr) / 3.0d0, 2.0d0)))
-      gnr = g_termr * (nc + 0.5 * phi * (nc - nr))
-    end if
-
-    ! Fluxes at cell left surface
-    nl = ni(index-1)
-    nc = ni(index)
-    nr = ni(index+1)
-    rl = (nl - nc + eps) / (nc - nr + eps)
-    phi = max(0.0d0, min(2.0d0 * rl, min((1.0d0 + 2.0d0 * rl) / 3.0d0, 2.0d0)))
-    gnl = g_terml * (nc + 0.5 * phi * (nc - nr))
-
-  end if
-
 end if
 
 if (i_gm==1) then

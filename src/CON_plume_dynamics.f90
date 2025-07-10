@@ -34,7 +34,7 @@ end subroutine set_mixing_timescale
 
 !**********************************************************************************************
 
-subroutine update_plume_variables(time)
+subroutine update_plume_variables(time, dt)
 
 !**********************************************************************************************
 ! 
@@ -58,6 +58,7 @@ implicit none
 double precision dilution 
 double precision beta
 double precision, intent(in) :: time
+double precision, intent(in) :: dt
 
 beta = 0.9 
 
@@ -80,8 +81,13 @@ amb_pw = amb_Si * sat_pressure_i_func(amb_temp)
 
 smw = ((amb_pw + G * (T - amb_temp)) / p_wsat) - 1
 
-sw = smw 
+if (time == 0.d0) then
+    sw = smw
+else
+    P_w = (smw - smw_prev) / dt ! / timestep 
+end if 
 
+smw_prev = smw
 end subroutine update_plume_variables
 
 !**********************************************************************************************

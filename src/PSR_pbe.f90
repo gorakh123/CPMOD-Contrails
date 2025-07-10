@@ -76,12 +76,10 @@ call set_mixing_timescale()
 do i_step = 1,n_steps
   
   ! update contrail plume variables
-  call update_plume_variables(time)
-  call plume_var_output(22, time)
-  call droplet_activation(nsoot, nwater)
+  call update_plume_variables(time, dt)
   ! The following should be done if the kernel should be updated at each time step due to e.g. 
   ! temperature dependency
-  call con_output(nsoot, nwater, nice, 33, time)
+  
   if (agg_kernel_update==1) then
     ! Insert here the expression for updating the kernel
     ! agg_kernel_const = 
@@ -89,10 +87,13 @@ do i_step = 1,n_steps
   end if
 
   ! Integrate
-    call pbe_integ(nsoot,dt)
+  call pbe_integ(nwater,dt)
 
   ! Calculate moments
   call pbe_moments(nsoot,moment,meansize)
+  call droplet_activation(nsoot, nwater)
+  call con_output(nsoot, nwater, nice, 33, time)
+  call plume_var_output(22, time)
 
   ! Write moments
   ! Write PSD

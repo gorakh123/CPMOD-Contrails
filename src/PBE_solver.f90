@@ -34,36 +34,35 @@ double precision, intent(in)                  :: dt
 
 double precision niprime(m),nitemp(m)
 double precision k1(m),k2(m),k3(m),k4(m)
-
 !----------------------------------------------------------------------------------------------
 
 if (solver_pbe == 1) then
 
   !Euler explicit
-  call pbe_ydot(ni,niprime)
+  call pbe_ydot(ni,niprime,dt)
   ni = ni + niprime * dt
 
 else if (solver_pbe == 2) then
 
   !Runge-Kutta 2nd order
-  call pbe_ydot(ni,niprime)
+  call pbe_ydot(ni,niprime, dt)
   nitemp = ni + 0.5D0 * niprime * dt
-  call pbe_ydot(nitemp,niprime)
+  call pbe_ydot(nitemp,niprime,dt)
   ni = ni + niprime * dt
 
 else if (solver_pbe == 3) then
 
   !Runge-Kutta 4th order
-  call pbe_ydot(ni,niprime)
+  call pbe_ydot(ni,niprime,dt)
   k1 = niprime * dt
   nitemp = ni + 0.5D0 * k1
-  call pbe_ydot(nitemp,niprime)
+  call pbe_ydot(nitemp,niprime,dt)
   k2 = niprime * dt
   nitemp = ni + 0.5D0 * k2
-  call pbe_ydot(nitemp,niprime)
+  call pbe_ydot(nitemp,niprime,dt)
   k3 = niprime * dt
   nitemp = ni + k3
-  call pbe_ydot(nitemp,niprime)
+  call pbe_ydot(nitemp,niprime,dt)
   k4 = niprime * dt
   ni = ni + (1.D0 / 6.D0) * k1 + (1.D0 / 3.D0) * k2 + (1.D0 / 3.D0) * k3 + (1.D0 / 6.D0) * k4
 
@@ -77,7 +76,7 @@ end subroutine pbe_integ
 
 !**********************************************************************************************
 
-subroutine pbe_ydot(ni,niprime)
+subroutine pbe_ydot(ni,niprime,timestep)
 
 !**********************************************************************************************
 !
@@ -93,6 +92,7 @@ subroutine pbe_ydot(ni,niprime)
 !**********************************************************************************************
 
 use pbe_mod
+use con_mod, only: sw, smw, P_w
 
 implicit none
 
@@ -100,8 +100,13 @@ double precision, dimension(m), intent(in)  :: ni
 double precision, dimension(m), intent(out) :: niprime
 
 double precision dn(m)
+double precision, intent(in) :: timestep
 
 double precision growth_source,growth_mass_source,params(1)
+double precision :: Lw_l, Lw_r
+double precision :: Jwr, Jwl
+double precision :: Lw_total 
+double precision :: nwsat
 
 integer index
 
@@ -125,19 +130,18 @@ if (max_nuc>0) then
 end if
 
 !Growth
-if (growth_function>0) then
+if ((sw>0.d0)) then
+  Lw_total = 0
   do index = 1,m
-    call growth_tvd(ni,index,growth_source)
+    call growth_tvd(ni,index,growth_source,1, Jwl, Jwr, nwsat)
     niprime(index) = niprime(index) + growth_source
+    Lw_r = (Jwr * ni(index)) / nwsat
+    Lw_total = Lw_total + Lw_r
   end do
-  if (i_gm==1) then
-    ! For mass-conservative growth scheme, apply growth source term after the first interval
-    do index=2,m
-      niprime(index) = niprime(index) + (ni(index)*g_coeff1 &
-      /((g_coeff2+1.)*0.5*(v(index)**2-v(index-1)**2))) & 
-      * (v(index)**(g_coeff2+1.)-v(index-1)**(g_coeff2+1.))
-    end do
-  end if
+  sw = sw + (P_w - Lw_total) * timestep
+
+else
+  sw = sw + (P_w * timestep)
 end if
 
 !Aggregation

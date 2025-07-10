@@ -73,6 +73,10 @@ double precision x_m, tau_m, r_0, epsilon
 double precision initial_temp, initial_velocity
 double precision T, p_wsat, p_isat, smi, smw, sw, si, rho, G ! Need to decide how the water coupling is going to be done
 double precision mean_radius, std_radius, mean_v, std_v
+double precision P_w, L_w, smw_prev ! according to Karcher et al 2015: ds/dt = P_w - L_w 
+                          ! P_w - supersaturation forcing due to mxing
+                          ! L_w - supersaturation sink due to condensation
+double precision drdt, dsdt
 
 double precision :: pi = acos(-1.d0)
 
@@ -608,9 +612,9 @@ do i=m-5,m
 end do
 
 lp = M1_lp/moment(1)
-if (lp.gt.0.001) then
-  write(*,*) 'warning, more than 0.1% of mass in the last five nodes'
-end if
+!if (lp.gt.0.001) then
+!  write(*,*) 'warning, more than 0.1% of mass in the last five nodes'
+!end if
 
 if (moment(0).gt.1.D-10) then
   meansize = moment(1)/moment(0)
@@ -702,7 +706,7 @@ implicit none
 integer, intent(in) :: unit
 double precision, intent(in) :: time
 
-write(unit, *) T, smw, amb_rho, time, amb_pw, p_wsat, smw*p_wsat
+write(unit, *) T, smw, sw, amb_rho, time
 
 end subroutine plume_var_output
 
@@ -730,7 +734,7 @@ double precision, dimension(m), intent(in) :: nwater
 double precision, dimension(m), intent(in) :: nice
 
 do i=1,m
-  write(unit,1002) v_m(i), nsoot(i), nwater(i), nice(i), sw, time
+  write(unit,1002) v_m(i), nsoot(i), nwater(i), sw, time
 end do
 
 1002 format(F12.2,1X,F12.2,1X,F12.2,1X,F12.2,1X,F10.6,1X,F6.4)
