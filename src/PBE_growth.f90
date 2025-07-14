@@ -8,7 +8,7 @@
 
 !**********************************************************************************************
 
-subroutine growth_tvd(ni,index,growth_source, w_or_i, Jw_l, Jw_r, n_satw)
+subroutine growth_tvd(ni,index,growth_source, w_or_i, g_terml, g_termr, n_satw)
 
 !**********************************************************************************************
 !
@@ -30,8 +30,8 @@ integer, intent(in)                        :: index
 double precision, intent(out)              :: growth_source
 
 double precision :: phi
-double precision :: g_terml
-double precision :: g_termr
+double precision, intent(out) :: g_terml
+double precision, intent(out) :: g_termr
 
 double precision :: gnl,gnr           !< (G*N) at left surface and right surface
 double precision :: nl                !< Number density in left cell
@@ -49,11 +49,10 @@ parameter(eps = 1.D1*epsilon(1.D0))
 
 integer, intent(in) :: w_or_i         ! Parameter determines wether water (1) or ice (0) growth is used
 
-double precision, intent(out) :: Jw_r
-double precision, intent(out) :: Jw_l
+double precision :: Jw_r
+double precision :: Jw_l
 double precision :: volH20 = 0.03d0 ! in nm**3 
 double precision :: alpha_w = 1.d0
-double precision :: radius_water_r, radius_water_l
 double precision :: thermal_speed
 double precision, intent(out) :: n_satw
 double precision :: diffusion_coef
@@ -62,15 +61,11 @@ double precision :: massH20 = 2.99d0 * 10.d0**(-26)
 
 !**********************************************************************************************
 
-radius_water_r = (v(index) * (3.d0 / (4.d0 * pi))) ** (1.d0 / 3.d0 ) * 10.d0**(-9) !m
-radius_water_l = (v(index-1) * (3.d0 / (4.d0 * pi))) ** (1.d0 / 3.d0 ) * 10.d0**(-9)
-
 thermal_speed = sqrt( (8 * kB * T) / (massH20)) ! m/s might need to change to nm/s
-n_satw = sat_pressure_w_func(T) / (kB * T)
+n_satw = (sat_pressure_w_func(T) / (kB * T))
 diffusion_coef = (2.66d0 * 10.d0 ** (-5)) * (T / 298.15d0)**(1.81d0) * (1.01325 * 10**5) / (amb_p) ! units m^2/s
 
-Jw_r = (pi * radius_water_r**2 * alpha_w * thermal_speed * n_satw * sw) / (1 + (alpha_w * thermal_speed * radius_water_r) / (4 * diffusion_coef))
-Jw_l = (pi * radius_water_l**2 * alpha_w * thermal_speed * n_satw * sw) / (1 + (alpha_w * thermal_speed * radius_water_l) / (4 * diffusion_coef))
+
 !Only growth to the right present at nucleation interval
 
 if (growth_function==1) then
@@ -87,17 +82,24 @@ else if (growth_function==2) then
 
 else if (growth_function==3.AND.w_or_i==1) then
 
-  g_termr = Jw_r * volH20 ! units [nm**3/s]
-  g_terml = Jw_l * volH20
+  Jw_r = (pi * (v(index)*10.d0**(-9))**2 * alpha_w * thermal_speed * n_satw * sw) / (1 + (alpha_w * thermal_speed * (v(index)*10.d0**(-9))) / (4 * diffusion_coef))
+  Jw_l = (pi * (v(index-1)*10.d0**(-9))**2 * alpha_w * thermal_speed * n_satw * sw) / (1 + (alpha_w * thermal_speed * (v(index-1)*10.d0**(-9))) / (4 * diffusion_coef))
+
+  g_termr = (Jw_r * volH20) / (4 * pi * v(index)**2) ! units [nm/s]
+  g_terml = (Jw_l * volH20) / (4 * pi * v(index-1)**2)
 
 end if
+
+
+!write(*,*) T, sw, thermal_speed, n_satw, v(index), g_termr
+
 
 !----------------------------------------------------------------------------------------------
 !TVD scheme ref: S.Qamar et al 2006: A comparative study of high resolution schemes for solving
 !                population balances in crystallization
 !----------------------------------------------------------------------------------------------
 
-if ((sw>0.d0).AND.(g_termr >=0).AND.(g_terml>=0)) then
+if ((sw>0.d0)) then
 
   ! growth rate is along positive direction
   if (index==1) then

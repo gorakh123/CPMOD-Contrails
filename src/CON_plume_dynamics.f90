@@ -113,7 +113,7 @@ implicit none
 double precision, dimension(m), intent(inout) :: nsoot
 double precision, dimension(m), intent(inout) :: nwater 
 
-double precision :: activation_radius, kelvin_radius, activation_vol
+double precision :: activation_radius, kelvin_radius
 double precision :: kappa
 
 integer :: i
@@ -121,11 +121,10 @@ integer :: i
 kelvin_radius = 1 ! [nm]
 kappa = 0.005
 activation_radius = (kelvin_radius / (54.d0 * kappa)**(1.d0/3.d0)) * (sw ** (-2.d0/3.d0))
-activation_vol = ((4.d0 * pi) / 3 ) * activation_radius**3
 
 do i = 1, m
 
-    if ((v_m(i) >= activation_vol).AND.(sw >= 0)) then
+    if ((v_m(i) >= activation_radius).AND.(sw >= 0)) then
         nwater(i) = nwater(i) + nsoot(i)
         nsoot(i) = 0.d0 
     end if

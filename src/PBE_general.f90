@@ -72,7 +72,7 @@ double precision amb_temp, amb_p, amb_rho, amb_pw, amb_Si
 double precision x_m, tau_m, r_0, epsilon
 double precision initial_temp, initial_velocity
 double precision T, p_wsat, p_isat, smi, smw, sw, si, rho, G ! Need to decide how the water coupling is going to be done
-double precision mean_radius, std_radius, mean_v, std_v
+double precision mean_radius, std_radius
 double precision P_w, L_w, smw_prev ! according to Karcher et al 2015: ds/dt = P_w - L_w 
                           ! P_w - supersaturation forcing due to mxing
                           ! L_w - supersaturation sink due to condensation
@@ -377,21 +377,18 @@ else if (initdis==2) then
   ni(n_th1:n_th2) = N0
 else if (initdis==3) then
   ! Log normal
-  mean_v = (((4.d0 * pi) / 3.d0) * mean_radius**3) 
-  std_v = (std_radius**3) 
 n_total = 0
   !ni = (N0 / (3.d0 * v_m * sqrt(2.d0 * pi) * log(std_radius))) * exp((- log(v_m / mean_v)**2) / (18.d0 * log(std_radius)**2)) * dv
   do i = 1, m
-    ni(i) = N0 * exp(-0.5d0 * (log(v_m(i)/mean_v) ** 2) /(log(std_v)**2)) / (v_m(i) * log(std_v) * sqrt(2.d0 * pi)) * dv(i)
+    ni(i) = N0 * exp(-0.5d0 * (log(v_m(i)/mean_radius) ** 2) /(log(std_radius)**2)) / (v_m(i) * log(std_radius) * sqrt(2.d0 * pi)) * dv(i)
     !write(*,*) exp(-0.5d0 * ((log(v_m(i)) - log(mean_radius)) ** 2) /(log(std_radius)**2))
     !write(*,*) 1.d0 / (v_m(i) * log(std_radius) * sqrt(2.d0 * pi)) 
     n_total = n_total + ni(i)
   end do
 write(*,*) 'total n: ', n_total
 write(*,*) 'mean radius', mean_radius
-write(*,*) 'mean volume: ', mean_v
 write(*,*) 'sigma radius', std_radius
-write(*,*) 'sigma volume', std_v
+
 !write(*,*) ni
 
 end if
@@ -732,12 +729,16 @@ double precision time
 double precision, dimension(m), intent(in) :: nsoot
 double precision, dimension(m), intent(in) :: nwater
 double precision, dimension(m), intent(in) :: nice
+double precision :: nwater_total
+
+nwater_total = 0
 
 do i=1,m
-  write(unit,1002) v_m(i), nsoot(i), nwater(i), sw, time
+  nwater_total = nwater_total + nwater(i)
+  write(unit,1002) v_m(i), nsoot(i), nwater(i), nwater_total, sw, time
 end do
 
-1002 format(F12.2,1X,F12.2,1X,F12.2,1X,F12.2,1X,F10.6,1X,F6.4)
+1002 format(F16.2,1X,F16.4,1X,F16.4,1X,F16.4,1X,F10.6,1X,F6.4)
 end subroutine con_output
 
 

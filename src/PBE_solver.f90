@@ -29,6 +29,8 @@ use pbe_mod
 
 implicit none
 
+integer index 
+
 double precision, dimension(m), intent(inout) :: ni
 double precision, intent(in)                  :: dt
 
@@ -68,6 +70,25 @@ else if (solver_pbe == 3) then
 
 end if
 
+! ensure n_i does not fall below 0
+
+do index = 1,m 
+  if (ni(index) < 0.d0) then
+
+    if (index==m) then
+      ni(index) = 0.d0
+    else if ((ni(index + 1) - ni(index)) > 0 ) then
+      ni(index + 1) = ni(index + 1) + ni(index) ! attempt to ensure conservation of number density
+      ni(index) = 0.d0
+    else if (((ni(index - 1) - ni(index) )> 0).AND.(m>1)) then
+      ni(index-1) = ni(index-1) + ni(index)
+    else
+      ni(index) = 0
+    end if
+
+  end if
+end do
+
 end subroutine pbe_integ
 
 !**********************************************************************************************
@@ -92,7 +113,7 @@ subroutine pbe_ydot(ni,niprime,timestep)
 !**********************************************************************************************
 
 use pbe_mod
-use con_mod, only: sw, smw, P_w
+use con_mod, only: sw, smw, P_w, pi
 
 implicit none
 
@@ -103,10 +124,11 @@ double precision dn(m)
 double precision, intent(in) :: timestep
 
 double precision growth_source,growth_mass_source,params(1)
-double precision :: Lw_l, Lw_r
-double precision :: Jwr, Jwl
+double precision :: Lw_index
+double precision :: gterml, gtermr
 double precision :: Lw_total 
 double precision :: nwsat
+double precision :: volH20 = 0.03d0 !nm**3
 
 integer index
 
@@ -132,12 +154,22 @@ end if
 !Growth
 if ((sw>0.d0)) then
   Lw_total = 0
+  !write(*,*) 'T ', 'sw ', 'thermal speed ', 'n_w,sat ', 'v(index) ', 'g_termr '
   do index = 1,m
-    call growth_tvd(ni,index,growth_source,1, Jwl, Jwr, nwsat)
+    call growth_tvd(ni,index,growth_source,1,gterml,gtermr,nwsat)
+    niprime(index) = growth_source
     niprime(index) = niprime(index) + growth_source
-    Lw_r = (Jwr * ni(index)) / nwsat
-    Lw_total = Lw_total + Lw_r
+    nwsat = nwsat * 10.d-9 ! ensure units are consistant
+    Lw_index = ((4 * pi) / (volH20 * nwsat)) * (ni(index) *dv(index)) * (v_m(index)**2) * ((gterml + gtermr)*0.5D0)
+    !write(*,*) Lw_index
+
+    if ((Lw_index == Lw_index).AND.(Lw_index>=0.d0)) then
+      Lw_total = Lw_total + Lw_index
+    end if
+
   end do
+  !write(*,*) 'Lw total: ', Lw_total, 'Pw :', P_w , 'nwsat: ', nwsat, 'volH20: ', volH20, 'last gterml: ', gterml
+  !sw = sw + P_w * timestep
   sw = sw + (P_w - Lw_total) * timestep
 
 else
