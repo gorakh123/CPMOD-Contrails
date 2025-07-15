@@ -21,7 +21,7 @@ subroutine growth_tvd(ni,index,growth_source, w_or_i, g_terml, g_termr, n_satw, 
 
 use pbe_mod
 
-use con_mod, Only: T, amb_p, pi, sat_pressure_w_func, sw
+use con_mod, Only: T, amb_p, pi, sat_pressure_w_func, sw, si
 
 implicit none
 
@@ -82,10 +82,20 @@ else if (growth_function==2) then
   g_termr = g_coeff1*(v(index)**g_coeff2)
   g_terml = g_coeff1*(v(index-1)**g_coeff2)
 
+! Ice growth
 else if (growth_function==3.AND.w_or_i==1) then
 
   Jw_r = (pi * (v(index)*10.d0**(-9))**2 * alpha_w * thermal_speed * n_satw * sw) / (1 + (alpha_w * thermal_speed * (v(index)*10.d0**(-9))) / (4 * diffusion_coef))
   Jw_l = (pi * (v(index-1)*10.d0**(-9))**2 * alpha_w * thermal_speed * n_satw * sw) / (1 + (alpha_w * thermal_speed * (v(index-1)*10.d0**(-9))) / (4 * diffusion_coef))
+
+  g_termr = (Jw_r * volH20) / (4 * pi * v(index)**2) ! units [nm/s]
+  g_terml = (Jw_l * volH20) / (4 * pi * v(index-1)**2)
+
+
+else if (growth_function==3.AND.w_or_i==0) then
+
+  Jw_r = (pi * (v(index)*10.d0**(-9))**2 * alpha_w * thermal_speed * n_satw * si) / (1 + (alpha_w * thermal_speed * (v(index)*10.d0**(-9))) / (4 * diffusion_coef))
+  Jw_l = (pi * (v(index-1)*10.d0**(-9))**2 * alpha_w * thermal_speed * n_satw * si) / (1 + (alpha_w * thermal_speed * (v(index-1)*10.d0**(-9))) / (4 * diffusion_coef))
 
   g_termr = (Jw_r * volH20) / (4 * pi * v(index)**2) ! units [nm/s]
   g_terml = (Jw_l * volH20) / (4 * pi * v(index-1)**2)
@@ -101,7 +111,45 @@ end if
 !                population balances in crystallization
 !----------------------------------------------------------------------------------------------
 
-if ((sw>0.d0)) then
+if ((sw>0.d0).AND.(w_or_i==1)) then
+
+  ! growth rate is along positive direction
+  if (index==1) then
+
+    gnl = 0.0D0
+    gnr = g_termr * 0.5 * (ni(1)+ni(2))
+
+  else if (index==m) then
+
+    rl = (ni(m) - ni(m-1) + eps) / (ni(m-1) - ni(m-2) + eps)
+    phi = max(0.0d0, min(2.0d0 * rl, min((1.0d0 + 2.0d0 * rl) / 3.0d0, 2.0d0)))
+    gnl = g_terml * (ni(m-1) + 0.5 * phi * (ni(m-1) - ni(m-2)))
+    gnr = g_termr * (ni(m) + 0.5*(ni(m) - ni(m-1)))
+
+  else
+
+    ! Fluxes at cell right surface
+    nl = ni(index-1)
+    nc = ni(index)
+    nr = ni(index+1)
+    rr = (nr - nc + eps) / (nc - nl + eps)
+    phi = max(0.0d0, min(2.0d0 * rr, min((1.0d0 + 2.0d0 * rr) / 3.0d0, 2.0d0)))
+    gnr = g_termr * (nc + 0.5 * phi * (nc - nl))
+
+    ! Fluxes at cell left surface
+    if (index==2 ) then
+      gnl = g_terml * 0.5 * (ni(1)+ni(2))
+    else
+      nl = ni(index-2)
+      nc = ni(index-1)
+      nr = ni(index)
+      rl = (nr - nc + eps) / (nc - nl + eps)
+      phi = max(0.0d0, min(2.0d0 * rl, min((1.0d0 + 2.0d0 * rl) / 3.0d0, 2.0d0)))
+      gnl = g_terml * (nc + 0.5 * phi * (nc - nl))
+    end if
+  end if
+
+else if ((si>0.d0).AND.(w_or_i==0)) then
 
   ! growth rate is along positive direction
   if (index==1) then
@@ -140,6 +188,9 @@ if ((sw>0.d0)) then
   end if
 end if
 
+
+
+
 if (i_gm==1) then
   ! For mass-conservative growth scheme, apply it after the first interval
   if (index>1) then
@@ -148,7 +199,7 @@ if (i_gm==1) then
     growth_source = (gnl - gnr) / dv(index)
   end if
 else
-  growth_source = (gnl - gnr) / dv(index)
+  growth_source = (gnl - gnr) / dv(index) 
 end if
 
 end subroutine growth_tvd

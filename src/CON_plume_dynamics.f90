@@ -98,6 +98,7 @@ pvap_mprev = pvap_m
 sw = sw + (P_w * dt)
 pvap = pvap + (dpvapdt_m * dt)
 sw = pvap / p_wsat - 1
+si = pvap / p_isat - 1
 end subroutine update_plume_variables
 
 !**********************************************************************************************

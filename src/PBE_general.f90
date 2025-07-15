@@ -723,7 +723,7 @@ subroutine con_output(nsoot, nwater, nice, unit, time)
 !**********************************************************************************************
 
 use pbe_mod
-use con_mod, only: sw
+use con_mod, only: sw, si
 
 implicit none
 
@@ -738,10 +738,10 @@ nwater_total = 0
 
 do i=1,m
   nwater_total = nwater_total + nwater(i)
-  write(unit,1002) v_m(i), nsoot(i), nwater(i), nice(i), nwater_total, sw, time
+  write(unit,1002) v_m(i), nsoot(i), nwater(i), nice(i), nwater_total, sw, si, time
 end do
 
-1002 format(F16.2,1X,F16.4,1X,F16.4,1X,F16.4,1X,F16.4,1X,F10.6,1X,F6.4)
+1002 format(F16.2,1X,F16.4,1X,F16.4,1X,F16.4,1X,F16.4,1X,F10.6,1X,F10.6,1x,F6.4)
 end subroutine con_output
 
 

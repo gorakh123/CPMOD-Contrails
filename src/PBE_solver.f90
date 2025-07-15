@@ -9,7 +9,7 @@
 
 !**********************************************************************************************
 
-subroutine pbe_integ(ni,dt)
+subroutine pbe_integ(ni,dt,ice_or_water)
 
 !**********************************************************************************************
 !
@@ -34,37 +34,39 @@ integer index
 double precision, dimension(m), intent(inout) :: ni
 double precision, intent(in)                  :: dt
 
+integer, intent(in) :: ice_or_water
+
 double precision niprime(m),nitemp(m)
 double precision k1(m),k2(m),k3(m),k4(m)
 !----------------------------------------------------------------------------------------------
 
 if (solver_pbe == 1) then
 
-  !Euler explicit
-  call pbe_ydot(ni,niprime,dt)
+  !Euler explicit - only currently used for contrails
+  call pbe_ydot(ni,niprime,dt,ice_or_water)
   ni = ni + niprime * dt
 
 else if (solver_pbe == 2) then
 
   !Runge-Kutta 2nd order
-  call pbe_ydot(ni,niprime, dt)
+  call pbe_ydot(ni,niprime,dt,ice_or_water)
   nitemp = ni + 0.5D0 * niprime * dt
-  call pbe_ydot(nitemp,niprime,dt)
+  call pbe_ydot(ni,niprime,dt,ice_or_water)
   ni = ni + niprime * dt
 
 else if (solver_pbe == 3) then
 
   !Runge-Kutta 4th order
-  call pbe_ydot(ni,niprime,dt)
+  call pbe_ydot(ni,niprime,dt,ice_or_water)
   k1 = niprime * dt
   nitemp = ni + 0.5D0 * k1
-  call pbe_ydot(nitemp,niprime,dt)
+  call pbe_ydot(ni,niprime,dt,ice_or_water)
   k2 = niprime * dt
   nitemp = ni + 0.5D0 * k2
-  call pbe_ydot(nitemp,niprime,dt)
+  call pbe_ydot(ni,niprime,dt,ice_or_water)
   k3 = niprime * dt
   nitemp = ni + k3
-  call pbe_ydot(nitemp,niprime,dt)
+  call pbe_ydot(ni,niprime,dt,ice_or_water)
   k4 = niprime * dt
   ni = ni + (1.D0 / 6.D0) * k1 + (1.D0 / 3.D0) * k2 + (1.D0 / 3.D0) * k3 + (1.D0 / 6.D0) * k4
 
@@ -97,7 +99,7 @@ end subroutine pbe_integ
 
 !**********************************************************************************************
 
-subroutine pbe_ydot(ni,niprime,timestep)
+subroutine pbe_ydot(ni,niprime,timestep, ice_or_water)
 
 !**********************************************************************************************
 !
@@ -113,7 +115,7 @@ subroutine pbe_ydot(ni,niprime,timestep)
 !**********************************************************************************************
 
 use pbe_mod
-use con_mod, only: sw, smw, P_w, pi, pvap, pvap_m, dpvapdt_m, p_wsat, T
+use con_mod, only: sw, smw, si, P_w, pi, pvap, pvap_m, dpvapdt_m, p_wsat, T
 
 implicit none
 
@@ -135,6 +137,7 @@ double precision :: gnl, gnr, nil, nir
 integer index
 
 double precision :: kB = 1.380649d0 * 10.d0**(-23)
+integer, intent(in) :: ice_or_water
 
 !----------------------------------------------------------------------------------------------
 
@@ -155,13 +158,13 @@ if (max_nuc>0) then
   end if
 end if
 
-!Growth
-if ((sw>0.d0)) then
+! Droplet Growth
+if ((sw>0.d0).AND.(ice_or_water==1)) then
   Lw_total = 0
   dpvapsink_total = 0
   !write(*,*) 'T ', 'sw ', 'thermal speed ', 'n_w,sat ', 'v(index) ', 'g_termr '
   do index = 1,m
-    call growth_tvd(ni,index,growth_source,1,gterml,gtermr,nwsat, gnl, gnr)
+    call growth_tvd(ni,index,growth_source,ice_or_water,gterml,gtermr,nwsat, gnl, gnr)
     niprime(index) = niprime(index) + growth_source
     nwsat = nwsat * 10.d-9 ! ensure units are consistant
     Lw_index = ((4 * pi) / (volH20 * nwsat)) * (ni(index) *dv(index)) * (v_m(index)**2) * ((gterml + gtermr)*0.5D0)
@@ -206,6 +209,33 @@ if ((sw>0.d0)) then
   !sw = sw + (-Lw_total * timestep)
   pvap = pvap + (-dpvapsink_total * timestep)
   !sw = pvap / p_wsat + 1
+end if
+
+! Ice growth
+if ((si>0.d0).AND.(ice_or_water==0)) then
+  Lw_total = 0
+  dpvapsink_total = 0
+
+  do index = 1,m
+    call growth_tvd(ni,index,growth_source,ice_or_water,gterml,gtermr,nwsat, gnl, gnr)
+    niprime(index) = niprime(index) + growth_source
+    nwsat = nwsat * 10.d-9 ! ensure units are consistant
+    Lw_index = ((4 * pi) / (volH20 * nwsat)) * (ni(index) *dv(index)) * (v_m(index)**2) * ((gterml + gtermr)*0.5D0)
+    dpvapsink_index = ((4 * pi * p_wsat) / (volH20 * nwsat)) * (ni(index) *dv(index)) * (v_m(index)**2) * ((gterml + gtermr)*0.5D0) !tweak nwsat
+
+
+    if ((Lw_index == Lw_index).AND.(Lw_index>=0.d0)) then
+      Lw_total = Lw_total + Lw_index
+      dpvapsink_total = dpvapsink_total + dpvapsink_index
+    end if
+
+    nil = (gnl / dv(index)) * timestep
+    nir = (gnr / dv(index)) * timestep
+
+  end do
+
+  pvap = pvap + (-dpvapsink_total * timestep)
+
 end if
 
 !Aggregation

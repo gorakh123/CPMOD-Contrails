@@ -92,7 +92,8 @@ do i_step = 1,n_steps
   call droplet_activation(nsoot, nwater)  
 
   ! Integrate
-  call pbe_integ(nwater,dt)
+  call pbe_integ(nwater,dt,1)
+  call pbe_integ(nice,dt,0)
 
   ! Calculate moments
   call pbe_moments(nsoot,moment,meansize)
