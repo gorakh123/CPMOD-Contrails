@@ -37,6 +37,7 @@ double precision, allocatable, dimension(:) :: v
 double precision, allocatable, dimension(:) :: dv
 double precision, allocatable, dimension(:) :: v_m
 double precision, allocatable, dimension(:) :: nuc
+double precision, allocatable, dimension(:) :: rcore_array
 
 double precision v0,grid_lb,grid_rb
 double precision agg_kernel_const
@@ -71,7 +72,7 @@ module con_mod
 double precision amb_temp, amb_p, amb_rho, amb_pw, amb_Si
 double precision x_m, tau_m, r_0, epsilon
 double precision initial_temp, initial_velocity
-double precision T, p_wsat, p_isat, smi, smw, sw, si, rho, G ! Need to decide how the water coupling is going to be done
+double precision T, p_wsat, p_isat, smi, smw, sw, si, rho, G, dTdt ! Need to decide how the water coupling is going to be done
 double precision mean_radius, std_radius
 double precision P_w, L_w, smw_prev ! according to Karcher et al 2015: ds/dt = P_w - L_w 
                           ! P_w - supersaturation forcing due to mxing
@@ -384,6 +385,7 @@ n_total = 0
     !write(*,*) exp(-0.5d0 * ((log(v_m(i)) - log(mean_radius)) ** 2) /(log(std_radius)**2))
     !write(*,*) 1.d0 / (v_m(i) * log(std_radius) * sqrt(2.d0 * pi)) 
     n_total = n_total + ni(i)
+    
   end do
 write(*,*) 'total n: ', n_total
 write(*,*) 'mean radius', mean_radius
@@ -436,7 +438,7 @@ integer i
 !----------------------------------------------------------------------------------------------
 
 ! Allocate arrays
-allocate(v(0:m),dv(m),v_m(m),nuc(m))
+allocate(v(0:m),dv(m),v_m(m),nuc(m),rcore_array(m))
 
 if (grid_type==1) then
 
@@ -735,10 +737,10 @@ nwater_total = 0
 
 do i=1,m
   nwater_total = nwater_total + nwater(i)
-  write(unit,1002) v_m(i), nsoot(i), nwater(i), nwater_total, sw, time
+  write(unit,1002) v_m(i), nsoot(i), nwater(i), nice(i), nwater_total, sw, time
 end do
 
-1002 format(F16.2,1X,F16.4,1X,F16.4,1X,F16.4,1X,F10.6,1X,F6.4)
+1002 format(F16.2,1X,F16.4,1X,F16.4,1X,F16.4,1X,F16.4,1X,F10.6,1X,F6.4)
 end subroutine con_output
 
 

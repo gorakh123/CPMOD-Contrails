@@ -130,6 +130,8 @@ double precision :: Lw_total
 double precision :: nwsat
 double precision :: volH20 = 0.03d0 !nm**3
 
+double precision :: gnl, gnr, nil, nir
+
 integer index
 
 !----------------------------------------------------------------------------------------------
@@ -156,8 +158,7 @@ if ((sw>0.d0)) then
   Lw_total = 0
   !write(*,*) 'T ', 'sw ', 'thermal speed ', 'n_w,sat ', 'v(index) ', 'g_termr '
   do index = 1,m
-    call growth_tvd(ni,index,growth_source,1,gterml,gtermr,nwsat)
-    niprime(index) = growth_source
+    call growth_tvd(ni,index,growth_source,1,gterml,gtermr,nwsat, gnl, gnr)
     niprime(index) = niprime(index) + growth_source
     nwsat = nwsat * 10.d-9 ! ensure units are consistant
     Lw_index = ((4 * pi) / (volH20 * nwsat)) * (ni(index) *dv(index)) * (v_m(index)**2) * ((gterml + gtermr)*0.5D0)
@@ -166,6 +167,28 @@ if ((sw>0.d0)) then
     if ((Lw_index == Lw_index).AND.(Lw_index>=0.d0)) then
       Lw_total = Lw_total + Lw_index
     end if
+
+    nil = (gnl / dv(index)) * timestep
+    nir = (gnr / dv(index)) * timestep
+
+    if (index==1) then
+      rcore_array(index) = rcore_array(index)
+    else
+      if (((ni(index) + nil - nir) > 0).AND.(ni(index)>nir)) then
+        rcore_array(index) =(((ni(index)-nir) * rcore_array(index)) + (nil * rcore_array(index-1))) / (ni(index) + nil - nir)
+      else if (((ni(index) + nil -nir) > 0).AND.(ni(index)<=nir)) then
+        rcore_array(index) = rcore_array(index-1)
+      else
+        rcore_array(index) = 0
+    !   if (ni(index) > nir) then
+    !     rcore_array(index) =(((ni(index)-nir) * rcore_array(index) ) + (ni * rcore_array(index-1))) / (ni(index) + nil - nir)
+    !   else if (nir >= ni(index) + nil) then
+    !     rcore_array(index) = 0
+    !   else if (nir >= ni(index)) then
+    !     rcore_array(index) = rcore_array(index-1)
+    !   end if
+      end if
+  end if
 
   end do
   !write(*,*) 'Lw total: ', Lw_total, 'Pw :', P_w , 'nwsat: ', nwsat, 'volH20: ', volH20, 'last gterml: ', gterml

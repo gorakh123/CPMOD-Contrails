@@ -11,9 +11,9 @@ PBE INPUT DATA
 0.                              ! Fragmentation rate constant
 0                               ! Order of Gaussian quadrature (for fragmentation)
 2                               ! Grid type
-200                              ! Number of grid points
+50                              ! Number of grid points
 0                            ! Minimum size in grid
-2000                            ! Maximum size in grid
+1000                            ! Maximum size in grid
 1.                              ! Volume of nuclei
 3                               ! Initial distribution
 1                               ! First non-zero interval for top-hat distribution

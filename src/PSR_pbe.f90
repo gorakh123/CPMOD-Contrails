@@ -86,12 +86,17 @@ do i_step = 1,n_steps
     call PBE_agg_beta(2)
   end if
 
+  !Droplet activation and freezing
+
+  call droplet_freeze(nwater, nice)
+  call droplet_activation(nsoot, nwater)  
+
   ! Integrate
   call pbe_integ(nwater,dt)
 
   ! Calculate moments
   call pbe_moments(nsoot,moment,meansize)
-  call droplet_activation(nsoot, nwater)
+
   call con_output(nsoot, nwater, nice, 33, time)
   call plume_var_output(22, time)
 

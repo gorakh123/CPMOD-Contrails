@@ -8,7 +8,7 @@
 
 !**********************************************************************************************
 
-subroutine growth_tvd(ni,index,growth_source, w_or_i, g_terml, g_termr, n_satw)
+subroutine growth_tvd(ni,index,growth_source, w_or_i, g_terml, g_termr, n_satw, gnl, gnr)
 
 !**********************************************************************************************
 !
@@ -33,7 +33,9 @@ double precision :: phi
 double precision, intent(out) :: g_terml
 double precision, intent(out) :: g_termr
 
-double precision :: gnl,gnr           !< (G*N) at left surface and right surface
+
+double precision, intent(out) :: gnl
+double precision, intent(out) :: gnr           !< (G*N) at left surface and right surface
 double precision :: nl                !< Number density in left cell
 double precision :: nll               !< Number density in left-left cell
 double precision :: nc                !< Number density in this cell
