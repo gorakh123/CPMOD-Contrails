@@ -113,7 +113,7 @@ subroutine pbe_ydot(ni,niprime,timestep)
 !**********************************************************************************************
 
 use pbe_mod
-use con_mod, only: sw, smw, P_w, pi
+use con_mod, only: sw, smw, P_w, pi, pvap, pvap_m, dpvapdt_m, p_wsat, T
 
 implicit none
 
@@ -124,15 +124,17 @@ double precision dn(m)
 double precision, intent(in) :: timestep
 
 double precision growth_source,growth_mass_source,params(1)
-double precision :: Lw_index
+double precision :: Lw_index, dpvapsink_index
 double precision :: gterml, gtermr
-double precision :: Lw_total 
+double precision :: Lw_total, dpvapsink_total 
 double precision :: nwsat
 double precision :: volH20 = 0.03d0 !nm**3
 
 double precision :: gnl, gnr, nil, nir
 
 integer index
+
+double precision :: kB = 1.380649d0 * 10.d0**(-23)
 
 !----------------------------------------------------------------------------------------------
 
@@ -156,30 +158,39 @@ end if
 !Growth
 if ((sw>0.d0)) then
   Lw_total = 0
+  dpvapsink_total = 0
   !write(*,*) 'T ', 'sw ', 'thermal speed ', 'n_w,sat ', 'v(index) ', 'g_termr '
   do index = 1,m
     call growth_tvd(ni,index,growth_source,1,gterml,gtermr,nwsat, gnl, gnr)
     niprime(index) = niprime(index) + growth_source
     nwsat = nwsat * 10.d-9 ! ensure units are consistant
     Lw_index = ((4 * pi) / (volH20 * nwsat)) * (ni(index) *dv(index)) * (v_m(index)**2) * ((gterml + gtermr)*0.5D0)
+    dpvapsink_index = ((4 * pi * p_wsat) / (volH20 * nwsat)) * (ni(index) *dv(index)) * (v_m(index)**2) * ((gterml + gtermr)*0.5D0) !tweak nwsat
     !write(*,*) Lw_index
 
     if ((Lw_index == Lw_index).AND.(Lw_index>=0.d0)) then
       Lw_total = Lw_total + Lw_index
+      dpvapsink_total = dpvapsink_total + dpvapsink_index
     end if
 
     nil = (gnl / dv(index)) * timestep
     nir = (gnr / dv(index)) * timestep
 
-    if (index==1) then
-      rcore_array(index) = rcore_array(index)
-    else
-      if (((ni(index) + nil - nir) > 0).AND.(ni(index)>nir)) then
-        rcore_array(index) =(((ni(index)-nir) * rcore_array(index)) + (nil * rcore_array(index-1))) / (ni(index) + nil - nir)
-      else if (((ni(index) + nil -nir) > 0).AND.(ni(index)<=nir)) then
-        rcore_array(index) = rcore_array(index-1)
-      else
-        rcore_array(index) = 0
+    ! Attmept to track dry core radius
+
+    ! if (index==1) then
+    !   rcore_array(index) = rcore_array(index)
+    ! else
+    !   if (((ni(index) + nil - nir) > 0).AND.(ni(index)>nir)) then
+    !     rcore_array(index) =(((ni(index)-nir) * rcore_array(index)) + (nil * rcore_array(index-1))) / (ni(index) + nil - nir)
+    !   else if (((ni(index) + nil -nir) > 0).AND.(ni(index)<=nir)) then
+    !     rcore_array(index) = rcore_array(index-1)
+    !   else
+    !     rcore_array(index) = 0
+
+
+    ! ensure ni(index) does not turn negative
+
     !   if (ni(index) > nir) then
     !     rcore_array(index) =(((ni(index)-nir) * rcore_array(index) ) + (ni * rcore_array(index-1))) / (ni(index) + nil - nir)
     !   else if (nir >= ni(index) + nil) then
@@ -187,16 +198,14 @@ if ((sw>0.d0)) then
     !   else if (nir >= ni(index)) then
     !     rcore_array(index) = rcore_array(index-1)
     !   end if
-      end if
-  end if
+    !  end if
+ ! end if
 
   end do
   !write(*,*) 'Lw total: ', Lw_total, 'Pw :', P_w , 'nwsat: ', nwsat, 'volH20: ', volH20, 'last gterml: ', gterml
-  !sw = sw + P_w * timestep
-  sw = sw + (P_w - Lw_total) * timestep
-
-else
-  sw = sw + (P_w * timestep)
+  !sw = sw + (-Lw_total * timestep)
+  pvap = pvap + (-dpvapsink_total * timestep)
+  !sw = pvap / p_wsat + 1
 end if
 
 !Aggregation

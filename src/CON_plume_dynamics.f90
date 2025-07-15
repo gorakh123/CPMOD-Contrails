@@ -82,14 +82,22 @@ p_isat = sat_pressure_i_func(T)
 amb_pw = amb_Si * sat_pressure_i_func(amb_temp)
 
 smw = ((amb_pw + G * (T - amb_temp)) / p_wsat) - 1
+pvap_m = amb_pw + G * (T - amb_temp)
 
 if (time == 0.d0) then
     sw = smw
+    pvap = pvap_m
 else
-    P_w = (smw - smw_prev) / dt ! / timestep 
+    P_w = (smw - smw_prev) / dt ! / timestep
+    dpvapdt_m = (pvap_m - pvap_mprev) / dt
 end if 
 
 smw_prev = smw
+pvap_mprev = pvap_m
+
+sw = sw + (P_w * dt)
+pvap = pvap + (dpvapdt_m * dt)
+sw = pvap / p_wsat - 1
 end subroutine update_plume_variables
 
 !**********************************************************************************************

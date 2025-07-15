@@ -72,9 +72,10 @@ module con_mod
 double precision amb_temp, amb_p, amb_rho, amb_pw, amb_Si
 double precision x_m, tau_m, r_0, epsilon
 double precision initial_temp, initial_velocity
-double precision T, p_wsat, p_isat, smi, smw, sw, si, rho, G, dTdt ! Need to decide how the water coupling is going to be done
+double precision T, p_wsat, p_isat, smi, smw, sw, si, rho, G, dTdt 
+double precision pvap_m, pvap, dpvapdt_m, pvap_mprev ! Need to decide how the water coupling is going to be done
 double precision mean_radius, std_radius
-double precision P_w, L_w, smw_prev ! according to Karcher et al 2015: ds/dt = P_w - L_w 
+double precision P_w, smw_prev ! according to Karcher et al 2015: ds/dt = P_w - L_w 
                           ! P_w - supersaturation forcing due to mxing
                           ! L_w - supersaturation sink due to condensation
 double precision drdt, dsdt
@@ -705,7 +706,7 @@ implicit none
 integer, intent(in) :: unit
 double precision, intent(in) :: time
 
-write(unit, *) T, smw, sw, amb_rho, time
+write(unit, *) T, smw, sw, pvap/p_wsat - 1,amb_rho, time
 
 end subroutine plume_var_output
 
