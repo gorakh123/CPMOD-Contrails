@@ -70,6 +70,7 @@ module con_mod
 !**********************************************************************************************
 
 double precision amb_temp, amb_p, amb_rho, amb_pw, amb_Si
+double precision amb_rhoprev, Dilution_prev
 double precision x_m, tau_m, r_0, epsilon
 double precision initial_temp, initial_velocity
 double precision T, p_wsat, p_isat, smi, smw, sw, si, rho, G, dTdt 
@@ -382,10 +383,10 @@ else if (initdis==3) then
 n_total = 0
   !ni = (N0 / (3.d0 * v_m * sqrt(2.d0 * pi) * log(std_radius))) * exp((- log(v_m / mean_v)**2) / (18.d0 * log(std_radius)**2)) * dv
   do i = 1, m
-    ni(i) = N0 * exp(-0.5d0 * (log(v_m(i)/mean_radius) ** 2) /(log(std_radius)**2)) / (v_m(i) * log(std_radius) * sqrt(2.d0 * pi)) * dv(i)
+    ni(i) = N0 * exp(-0.5d0 * (log(v_m(i)/mean_radius) ** 2) /(log(std_radius)**2)) / (v_m(i) * log(std_radius) * sqrt(2.d0 * pi)) 
     !write(*,*) exp(-0.5d0 * ((log(v_m(i)) - log(mean_radius)) ** 2) /(log(std_radius)**2))
     !write(*,*) 1.d0 / (v_m(i) * log(std_radius) * sqrt(2.d0 * pi)) 
-    n_total = n_total + ni(i)
+    n_total = n_total + (ni(i) * dv(i))
     
   end do
 write(*,*) 'total n: ', n_total
@@ -667,14 +668,14 @@ do i=1,m
     nitemp(i) = ni(i)
   end if
 end do
-open(99,file='pbe/psd.out')
+open(99,file='pbe/psd.csv')
 do i=1,m
   write(99,1001) v_m(i),(6.D0/3.14159*v_m(i))**(1.D0/3.D0),nitemp(i), &
   & nitemp(i)*dv(i)/moment(0),v_m(i)*nitemp(i),v_m(i)*nitemp(i)*dv(i)/moment(1)
 end do
 close(99)
 if (i_writesp==1) then
-  open(99,file='pbe/psd_sp.out')
+  open(99,file='pbe/psd_sp.csv')
   do i=1,m
     eta(i) = moment(0)*v_m(i)/moment(1)
     psi(i) = nitemp(i)*moment(1)/moment(0)**2
@@ -706,7 +707,7 @@ implicit none
 integer, intent(in) :: unit
 double precision, intent(in) :: time
 
-write(unit, *) T, smw, sw, pvap/p_wsat - 1,amb_rho, time
+write(unit, *) T, smw, sw, si, amb_rho, time
 
 end subroutine plume_var_output
 
@@ -732,16 +733,16 @@ double precision time
 double precision, dimension(m), intent(in) :: nsoot
 double precision, dimension(m), intent(in) :: nwater
 double precision, dimension(m), intent(in) :: nice
-double precision :: nwater_total
+double precision :: niw_total !ice or water droplets
 
-nwater_total = 0
+niw_total = 0.d0
 
 do i=1,m
-  nwater_total = nwater_total + nwater(i)
-  write(unit,1002) v_m(i), nsoot(i), nwater(i), nice(i), nwater_total, sw, si, time
+  niw_total = niw_total + (nice(i) * dv(i)) + (nwater(i) * dv(i))
+  write(unit,1002) v_m(i), nsoot(i), nwater(i), nice(i), niw_total, sw, si, time
 end do
 
-1002 format(F16.2,1X,F16.4,1X,F16.4,1X,F16.4,1X,F16.4,1X,F10.6,1X,F10.6,1x,F6.4)
+1002 format(F16.2,1X,E16.4,1X,E16.4,1X,E16.4,1X,E16.4,1X,F10.6,1X,F10.6,1x,F6.4)
 end subroutine con_output
 
 

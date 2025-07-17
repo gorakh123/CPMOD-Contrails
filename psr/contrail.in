@@ -1,15 +1,15 @@
 Input data for Contrails
 
-25000                            ! Ambient pressure [Pa]
-220                              ! Ambient temperature [K]
-1.0                                 ! Ambient Saturation ratio w.r.t ice [-]
-0.5                               ! Jet radius [m]
-418.85                                ! Jet initial velocity [m/s]
-600                              ! Jet initial temperature [K]
-1.64                                 ! Mixing line slope parameter G [Pa/K]
+28740.d0                           ! Ambient pressure [Pa]
+220.7d0                              ! Ambient temperature [K]
+0.73d0                                 ! Ambient Saturation ratio w.r.t ice [-]
+0.21                               ! Jet radius [m]
+350                               ! Jet initial velocity [m/s]
+563                              ! Jet initial temperature [K]
+1.59                                 ! Mixing line slope parameter G [Pa/K]
 
-15                                  ! Geometric mean radius of Soot particles
-1.6                                 ! Standard deviation of Soot particles
+17                                  ! Geometric mean radius of Soot particles
+1.55                                 ! Standard deviation of Soot particles
 
 
 

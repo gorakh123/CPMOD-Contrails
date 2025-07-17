@@ -34,7 +34,7 @@ end subroutine set_mixing_timescale
 
 !**********************************************************************************************
 
-subroutine update_plume_variables(time, dt)
+subroutine update_plume_variables(nsoot, nwater, nice, time, dt)
 
 !**********************************************************************************************
 ! 
@@ -50,7 +50,7 @@ subroutine update_plume_variables(time, dt)
 ! By Gorakh Adhikari 26/06/2025
 ! 
 !**********************************************************************************************
-
+use pbe_mod, only: m
 use con_mod
 
 implicit none
@@ -59,8 +59,13 @@ double precision dilution
 double precision beta
 double precision, intent(in) :: time
 double precision, intent(in) :: dt
+double precision, dimension(m), intent(inout) :: nwater
+double precision, dimension(m), intent(inout) :: nice
+double precision, dimension(m), intent(inout) :: nsoot
+double precision :: R = 287.d0 !Specific gas constant of air J/kgK
 
-beta = 0.9 
+
+beta = 0.9d0 
 
 if (time > tau_m) then
 
@@ -71,8 +76,8 @@ if (time > tau_m) then
 else
 
     T = initial_temp 
-    dilution = 1
-    dTdt = 0
+    dilution = 1.d0
+    dTdt = 0.d0
     
 end if
 
@@ -81,24 +86,38 @@ p_isat = sat_pressure_i_func(T)
 
 amb_pw = amb_Si * sat_pressure_i_func(amb_temp)
 
-smw = ((amb_pw + G * (T - amb_temp)) / p_wsat) - 1
+smw = ((amb_pw + G * (T - amb_temp)) / p_wsat) - 1.d0
 pvap_m = amb_pw + G * (T - amb_temp)
+
+amb_rho = amb_p / (T * R)
 
 if (time == 0.d0) then
     sw = smw
     pvap = pvap_m
+    Dilution_prev = dilution
+    amb_rhoprev = amb_rho
 else
-    P_w = (smw - smw_prev) / dt ! / timestep
+    P_w = (smw - smw_prev) / dt 
     dpvapdt_m = (pvap_m - pvap_mprev) / dt
 end if 
 
+nsoot = (nsoot * amb_rho * dilution) / (amb_rhoprev * Dilution_prev)
+nwater = (nwater * amb_rho * dilution) / (amb_rhoprev * Dilution_prev)
+nice = (nice * amb_rho * dilution) / (amb_rhoprev * Dilution_prev)
+
+
+
 smw_prev = smw
 pvap_mprev = pvap_m
+amb_rhoprev = amb_rho
+Dilution_prev = dilution
 
 sw = sw + (P_w * dt)
 pvap = pvap + (dpvapdt_m * dt)
 sw = pvap / p_wsat - 1
 si = pvap / p_isat - 1
+
+
 end subroutine update_plume_variables
 
 !**********************************************************************************************

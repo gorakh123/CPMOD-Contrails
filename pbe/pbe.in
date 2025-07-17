@@ -11,14 +11,14 @@ PBE INPUT DATA
 0.                              ! Fragmentation rate constant
 0                               ! Order of Gaussian quadrature (for fragmentation)
 2                               ! Grid type
-50                              ! Number of grid points
+100                              ! Number of grid points
 0                            ! Minimum size in grid
 1000                            ! Maximum size in grid
 1.                              ! Volume of nuclei
 3                               ! Initial distribution
 1                               ! First non-zero interval for top-hat distribution
 1                               ! Second non-zero interval for top-hat distribution
-1000.d0                              ! Value for initialising number density
+3.8e12                              ! Value for initialising number density
 1                               ! Integration method
 
 Aggregation kernels:

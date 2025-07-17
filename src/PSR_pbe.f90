@@ -63,8 +63,8 @@ i_write = 0
 time = 0
 !----------------------------------------------------------------------------------------------
 
-open(22, file='pbe/plume_variables.out')
-open(33, file='pbe/distribution_data.out')
+open(22, file='pbe/plume_variables.csv')
+open(33, file='pbe/distribution_data.csv')
 ! Integration
 
 ! Write initial moments
@@ -76,7 +76,7 @@ call set_mixing_timescale()
 do i_step = 1,n_steps
   
   ! update contrail plume variables
-  call update_plume_variables(time, dt)
+  call update_plume_variables(nsoot, nwater, nice, time, dt)
   ! The following should be done if the kernel should be updated at each time step due to e.g. 
   ! temperature dependency
   
