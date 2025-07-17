@@ -1,0 +1,9 @@
+# Compiled modules and object files
+*.o
+*.mod
+*.exe
+
+# Ouputs
+*.csv
+
+tempCodeRunnerFile.py

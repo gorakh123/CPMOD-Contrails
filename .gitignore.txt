@@ -1,8 +1,0 @@
-# Data files
-*.csv
-
-# mod files
-*.mod
-
-# .o files
-*.o
