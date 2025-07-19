@@ -707,7 +707,7 @@ implicit none
 integer, intent(in) :: unit
 double precision, intent(in) :: time
 
-write(unit, *) T, smw, sw, si, amb_rho, time
+write(unit, *) T,',',smw,',',sw,',',si,',',amb_rho,',',time
 
 end subroutine plume_var_output
 
@@ -734,12 +734,13 @@ double precision, dimension(m), intent(in) :: nsoot
 double precision, dimension(m), intent(in) :: nwater
 double precision, dimension(m), intent(in) :: nice
 double precision :: niw_total !ice or water droplets
-
+character(len=100) :: data_fmt
+data_fmt = '(F16.2,",",E16.4,",",E16.4,",",E16.4,",",E16.4,",",F10.6,",",F10.6,",",F6.4)'
 niw_total = 0.d0
 
 do i=1,m
   niw_total = niw_total + (nice(i) * dv(i)) + (nwater(i) * dv(i))
-  write(unit,1002) v_m(i), nsoot(i), nwater(i), nice(i), niw_total, sw, si, time
+  write(unit,data_fmt) v_m(i), nsoot(i), nwater(i), nice(i), niw_total, sw, si, time
 end do
 
 1002 format(F16.2,1X,E16.4,1X,E16.4,1X,E16.4,1X,E16.4,1X,F10.6,1X,F10.6,1x,F6.4)

@@ -63,8 +63,10 @@ i_write = 0
 time = 0
 !----------------------------------------------------------------------------------------------
 
-open(22, file='pbe/plume_variables.csv')
+open(22, file='pbe/plume_variables.csv', status='replace', action='write')
+write(22,*) 'Temperature (K),smw,sw,si,Ambient Density (kg/m^3),time'
 open(33, file='pbe/distribution_data.csv')
+write(33,*) 'radius (nm),nsoot,nwater,nice,cumulative n,sw,si,time'
 ! Integration
 
 ! Write initial moments

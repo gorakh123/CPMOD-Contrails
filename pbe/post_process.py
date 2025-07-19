@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import os
 from pathlib import Path
 
+# Read csv and create df
 script_folder = Path(__file__).resolve().parent
 csv_path = script_folder / "plume_variables.csv"
 
@@ -20,6 +21,8 @@ plume_df.columns = [
     'Pw', 
     'time']
 
+
+# Plot Temperature vs time
 fig, ax = plt.subplots(
     figsize=(8,5))
 
@@ -35,7 +38,7 @@ ax.grid()
 plt.show()
 
 
-
+# Plot smw, sw, si vs time
 fig2, ax2 = plt.subplots(
     figsize=(8,5))
 
