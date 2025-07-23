@@ -21,14 +21,14 @@ double precision int_time,tin,meansize,dt,time
 
 integer i,i_step,n_steps,iflag,flowflag,nin,i_write,n_write,i_writesp
 integer agg_kernel_update,n_pbe_grid
-
+double precision :: output_timestep
 ! TEST variables
 ! double precision Temperature, Pw, RH, rho, time
 
 !**********************************************************************************************
 
 ! Initialisation
-
+output_timestep = 0.01d0
 ! Initialise PBE
 call pbe_read(n_pbe_grid)
 call contrail_read()
@@ -67,6 +67,8 @@ open(22, file='pbe/plume_variables.csv', status='replace', action='write')
 write(22,*) 'Temperature (K),smw,sw,si,Ambient Density (kg/m^3),time'
 open(33, file='pbe/distribution_data.csv')
 write(33,*) 'radius (nm),nsoot,nwater,nice,cumulative n,sw,si,time'
+open(55, file='pbe/moments.csv')
+write(55,*) 'time(s),n_soot(#/m^3),n_water(#/m^3),n_ice(#/m^3),r_i(nm),r_act(nm)'
 ! Integration
 
 ! Write initial moments
@@ -100,8 +102,9 @@ do i_step = 1,n_steps
   ! Calculate moments
   call pbe_moments(nsoot,moment,meansize)
 
-  call con_output(nsoot, nwater, nice, 33, time)
-  call plume_var_output(22, time)
+  call con_output(nsoot, nwater, nice, 33, time, output_timestep)
+  call plume_var_output(22, time, output_timestep)
+  call moments_output(nsoot, nwater, nice, 55, time, output_timestep)
 
   ! Write moments
   ! Write PSD
@@ -116,6 +119,8 @@ end do
 
 !----------------------------------------------------------------------------------------------
 close(22)
+close(33)
+close(55)
 
 ! Deallocate arrays
 deallocate(nsoot)

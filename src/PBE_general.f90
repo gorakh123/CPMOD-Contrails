@@ -690,7 +690,7 @@ end subroutine pbe_output
 
 !**********************************************************************************************
 
-subroutine plume_var_output(unit, time)
+subroutine plume_var_output(unit, time, time_step)
 
 !**********************************************************************************************
 ! Outputs plume variables: T, pw, ambient RH_w, ambient density and time step
@@ -706,15 +706,17 @@ implicit none
 
 integer, intent(in) :: unit
 double precision, intent(in) :: time
+double precision, intent(in) :: time_step
 
-write(unit, *) T,',',smw,',',sw,',',si,',',amb_rho,',',time
-
+if (mod(int(time*1000.d0),int(time_step*1000.d0))==0) then
+  write(unit, *) T,',',smw,',',sw,',',si,',',amb_rho,',',time
+end if
 end subroutine plume_var_output
 
 
 !**********************************************************************************************
 
-subroutine con_output(nsoot, nwater, nice, unit, time)
+subroutine con_output(nsoot, nwater, nice, unit, time, time_step)
 
 !**********************************************************************************************
 ! Outputs contrail related data
@@ -728,8 +730,10 @@ use con_mod, only: sw, si
 
 implicit none
 
-integer i, unit
-double precision time
+integer i 
+integer, intent(in) :: unit
+double precision, intent(in) :: time
+double precision, intent(in) :: time_step
 double precision, dimension(m), intent(in) :: nsoot
 double precision, dimension(m), intent(in) :: nwater
 double precision, dimension(m), intent(in) :: nice
@@ -737,17 +741,74 @@ double precision :: niw_total !ice or water droplets
 character(len=100) :: data_fmt
 data_fmt = '(F16.2,",",E16.4,",",E16.4,",",E16.4,",",E16.4,",",F10.6,",",F10.6,",",F6.4)'
 niw_total = 0.d0
-
-do i=1,m
-  niw_total = niw_total + (nice(i) * dv(i)) + (nwater(i) * dv(i))
-  write(unit,data_fmt) v_m(i), nsoot(i), nwater(i), nice(i), niw_total, sw, si, time
-end do
+if (mod(int(time*1000.d0),int(time_step*1000.d0))==0) then
+  do i=1,m
+    niw_total = niw_total + (nice(i) * dv(i)) + (nwater(i) * dv(i))
+    write(unit,data_fmt) v_m(i), nsoot(i), nwater(i), nice(i), niw_total, sw, si, time
+  end do
+end if
 
 1002 format(F16.2,1X,E16.4,1X,E16.4,1X,E16.4,1X,E16.4,1X,F10.6,1X,F10.6,1x,F6.4)
 end subroutine con_output
 
+!**********************************************************************************************
 
+subroutine moments_output(nsoot, nwater, nice, unit, time, time_step)
 
+!**********************************************************************************************
+! Outputs zeroth moment (total number/number concentration of particles) &
+!         first moment (average radius)
+!
+! By Gorakh Adhikari
+! Created 17/06/25
+!**********************************************************************************************
+
+  use pbe_mod
+
+  implicit none
+  double precision, dimension(m), intent(in) :: nsoot
+  double precision, dimension(m), intent(in) :: nwater
+  double precision, dimension(m), intent(in) :: nice
+  integer, intent(in) :: unit
+  double precision, intent(in) :: time
+  double precision, intent(in) :: time_step
+
+  double precision :: nsoot_total
+  double precision :: nwater_total
+  double precision :: nice_total
+  double precision :: rice_total
+  double precision :: avg_rice
+  double precision :: ract_total
+  double precision :: avg_ract
+
+  integer i
+
+  character(len=100) :: data_fmt
+
+  nsoot_total = 0.d0
+  nwater_total = 0.d0
+  nice_total = 0.d0
+  avg_rice = 0.d0
+  rice_total = 0.d0
+  avg_ract = 0.d0
+  ract_total = 0.d0
+
+  data_fmt = '(F6.4,",",E16.4,",",E16.4,",",E16.4,",",F12.4,",",F12.4)'
+  ! time, nsoot, nwater, nice, avg r
+  if (mod(int(time*1000.d0),int(time_step*1000.d0))==0) then
+    do i = 1,m
+      nsoot_total = nsoot_total + (nsoot(i) * dv(i))
+      nwater_total = nwater_total + (nwater(i) * dv(i))
+      nice_total = nice_total + (nice(i) * dv(i))
+      rice_total = rice_total +  (nice(i)*dv(i)*v_m(i))
+      ract_total = ract_total + (nice(i)*dv(i)*v_m(i)) + (nwater(i)*dv(i)*v_m(i))
+    end do
+    avg_rice = rice_total/nice_total
+    avg_ract = ract_total/(nice_total+nwater_total)
+
+    write(unit,data_fmt) time, nsoot_total, nwater_total, nice_total, avg_rice, avg_ract
+  end if
+end subroutine moments_output
 
 
 subroutine pbe_deallocate()
