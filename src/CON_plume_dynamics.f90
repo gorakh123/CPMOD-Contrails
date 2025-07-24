@@ -135,7 +135,7 @@ subroutine droplet_activation(nsoot, nwater)
 !
 !**********************************************************************************************
 
-use pbe_mod, only: m, v_m, dv, rcore_array     
+use pbe_mod, only: m, v_m, rcore_array     
 use con_mod
 
 implicit none
@@ -195,22 +195,20 @@ subroutine droplet_freeze(nwater, nice)
     double precision :: lambda
 
     integer index
-
     tau_frz = 1.d0/( -3.574d0 * dTdt)
     J_ice = 10.d0**6 * (exp(-3.574d0*T + 858.719d0))
     do index = 1, m
-        LWV = ((v_m(index)**3 - mean_radius**3) * (4.d0*pi)/3.d0) * 10.d-27
+        LWV = ((v_m(index)**3) * (4.d0*pi)/3.d0) * 10.d-27
+        ! LWV = ((v_m(index)**3 - mean_radius**3) * (4.d0*pi)/3.d0) * 10.d-27
         lambda = LWV * J_ice * tau_frz
         !write(*,*) 'lambda: ', lambda, 'LWV: ', LWV, 'J_ice: ', J_ice, 'tau_frz: ', tau_frz,'Temp: ', T
+        
 
         if ((lambda>=1.d0).AND.(nwater(index)>=0.d0)) then
             !write(*,*) 'Checkpoint'
             nice(index) = nice(index) + nwater(index)
             nwater(index) = 0.d0
         end if
-        
-
     end do
-
 
 end subroutine droplet_freeze

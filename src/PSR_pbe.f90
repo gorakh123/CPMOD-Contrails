@@ -19,7 +19,7 @@ double precision, allocatable :: nice(:)
 double precision moment(0:1)
 double precision int_time,tin,meansize,dt,time
 
-integer i,i_step,n_steps,iflag,flowflag,nin,i_write,n_write,i_writesp
+integer i,i_step,n_steps,iflag,flowflag,nin,i_write,n_write,i_writesp,nout_dt
 integer agg_kernel_update,n_pbe_grid
 double precision :: output_timestep
 ! TEST variables
@@ -28,7 +28,6 @@ double precision :: output_timestep
 !**********************************************************************************************
 
 ! Initialisation
-output_timestep = 0.01d0
 ! Initialise PBE
 call pbe_read(n_pbe_grid)
 call contrail_read()
@@ -52,15 +51,18 @@ read(30,*) dt
 read(30,*) agg_kernel_update
 read(30,*) i_writesp
 read(30,*) n_write
+read(30,*) output_timestep
 close(30)
-
-! Read contrail input data
 
 
 ! Initialise PSR integration
-n_steps = int_time/dt
+n_steps = int(int_time/dt)
+nout_dt = int(output_timestep/dt)
+
 i_write = 0
 time = 0
+
+
 !----------------------------------------------------------------------------------------------
 
 open(22, file='pbe/plume_variables.csv', status='replace', action='write')
@@ -102,9 +104,9 @@ do i_step = 1,n_steps
   ! Calculate moments
   call pbe_moments(nsoot,moment,meansize)
 
-  call con_output(nsoot, nwater, nice, 33, time, output_timestep)
-  call plume_var_output(22, time, output_timestep)
-  call moments_output(nsoot, nwater, nice, 55, time, output_timestep)
+  call con_output(nsoot, nwater, nice, 33, time,i_step,nout_dt)
+  call plume_var_output(22, time,i_step, nout_dt)
+  call moments_output(nsoot, nwater, nice, 55, time, i_step, nout_dt)
 
   ! Write moments
   ! Write PSD
@@ -128,7 +130,7 @@ deallocate(nwater)
 deallocate(nice)
 
 call PBE_deallocate()
-
+write(*,*) 'Check'
 end subroutine psr_pbe
 
 !**********************************************************************************************

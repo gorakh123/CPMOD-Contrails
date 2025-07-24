@@ -690,7 +690,7 @@ end subroutine pbe_output
 
 !**********************************************************************************************
 
-subroutine plume_var_output(unit, time, time_step)
+subroutine plume_var_output(unit, time, n_time, n_output)
 
 !**********************************************************************************************
 ! Outputs plume variables: T, pw, ambient RH_w, ambient density and time step
@@ -706,9 +706,10 @@ implicit none
 
 integer, intent(in) :: unit
 double precision, intent(in) :: time
-double precision, intent(in) :: time_step
+integer, intent(in) :: n_output
+integer, intent(in) :: n_time
 
-if (mod(int(time*1000.d0),int(time_step*1000.d0))==0) then
+if (mod(n_time, n_output) == 0) then
   write(unit, *) T,',',smw,',',sw,',',si,',',amb_rho,',',time
 end if
 end subroutine plume_var_output
@@ -716,7 +717,7 @@ end subroutine plume_var_output
 
 !**********************************************************************************************
 
-subroutine con_output(nsoot, nwater, nice, unit, time, time_step)
+subroutine con_output(nsoot, nwater, nice, unit, time, n_time, n_output)
 
 !**********************************************************************************************
 ! Outputs contrail related data
@@ -733,7 +734,8 @@ implicit none
 integer i 
 integer, intent(in) :: unit
 double precision, intent(in) :: time
-double precision, intent(in) :: time_step
+integer, intent(in) :: n_time
+integer, intent(in) :: n_output
 double precision, dimension(m), intent(in) :: nsoot
 double precision, dimension(m), intent(in) :: nwater
 double precision, dimension(m), intent(in) :: nice
@@ -741,19 +743,17 @@ double precision :: niw_total !ice or water droplets
 character(len=100) :: data_fmt
 data_fmt = '(F16.2,",",E16.4,",",E16.4,",",E16.4,",",E16.4,",",F10.6,",",F10.6,",",F6.4)'
 niw_total = 0.d0
-if (mod(int(time*1000.d0),int(time_step*1000.d0))==0) then
+if (mod(n_time,n_output)==0) then
   do i=1,m
     niw_total = niw_total + (nice(i) * dv(i)) + (nwater(i) * dv(i))
     write(unit,data_fmt) v_m(i), nsoot(i), nwater(i), nice(i), niw_total, sw, si, time
   end do
 end if
-
-1002 format(F16.2,1X,E16.4,1X,E16.4,1X,E16.4,1X,E16.4,1X,F10.6,1X,F10.6,1x,F6.4)
 end subroutine con_output
 
 !**********************************************************************************************
 
-subroutine moments_output(nsoot, nwater, nice, unit, time, time_step)
+subroutine moments_output(nsoot, nwater, nice, unit, time, n_time, n_output)
 
 !**********************************************************************************************
 ! Outputs zeroth moment (total number/number concentration of particles) &
@@ -771,7 +771,8 @@ subroutine moments_output(nsoot, nwater, nice, unit, time, time_step)
   double precision, dimension(m), intent(in) :: nice
   integer, intent(in) :: unit
   double precision, intent(in) :: time
-  double precision, intent(in) :: time_step
+  integer, intent(in) :: n_time
+  integer, intent(in) :: n_output
 
   double precision :: nsoot_total
   double precision :: nwater_total
@@ -795,7 +796,7 @@ subroutine moments_output(nsoot, nwater, nice, unit, time, time_step)
 
   data_fmt = '(F6.4,",",E16.4,",",E16.4,",",E16.4,",",F12.4,",",F12.4)'
   ! time, nsoot, nwater, nice, avg r
-  if (mod(int(time*1000.d0),int(time_step*1000.d0))==0) then
+  if (mod(n_time, n_output)==0) then
     do i = 1,m
       nsoot_total = nsoot_total + (nsoot(i) * dv(i))
       nwater_total = nwater_total + (nwater(i) * dv(i))

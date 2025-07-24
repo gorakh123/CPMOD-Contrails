@@ -12,6 +12,17 @@ csv_path = script_folder / "moments.csv"
 moments_df = pd.read_csv(csv_path)
 print(moments_df.columns)
 
+for col in ['n_ice(#/m^3)', 'n_water(#/m^3)', 'n_soot(#/m^3)']:
+    moments_df[col] = (
+        moments_df[col]
+          .astype(str)                     # ensure it’s a string
+          .str.strip()                     # strip any whitespace
+          .replace('', pd.NA)              # empty → NA
+          .pipe(pd.to_numeric, errors='coerce')  # parse floats (and sci‑notation)
+          .fillna(0)                       # decide how to handle missing → here 0
+          .astype(int)                     # finally cast to int
+    )
+
 fig, ax = plt.subplots(figsize=(8,5))
 
 ax.plot(
