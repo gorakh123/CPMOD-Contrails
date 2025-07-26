@@ -12,7 +12,8 @@ subroutine psr_pbe()
 
 implicit none
 
-double precision, allocatable :: nsoot(:) 
+double precision, allocatable :: nsoot(:)
+double precision, allocatable :: namb(:)
 double precision, allocatable :: nwater(:) 
 double precision, allocatable :: nice(:) 
 
@@ -33,13 +34,14 @@ call pbe_read(n_pbe_grid)
 call contrail_read()
 
 allocate(nsoot(n_pbe_grid))
+allocate(namb(n_pbe_grid))
 allocate(nwater(n_pbe_grid))
 allocate(nice(n_pbe_grid))
 
 nwater = 0.0
 nice= 0.0
 call pbe_grid()
-call pbe_init(nsoot)
+call pbe_init(nsoot, namb)
 
 ! Read PSR input data
 open(30,file='psr/psr.in')
@@ -68,9 +70,9 @@ time = 0
 open(22, file='pbe/plume_variables.csv', status='replace', action='write')
 write(22,*) 'Temperature (K),smw,sw,si,Ambient Density (kg/m^3),time'
 open(33, file='pbe/distribution_data.csv')
-write(33,*) 'radius (nm),nsoot,nwater,nice,cumulative n,sw,si,time'
+write(33,*) 'radius (nm),nsoot,namb,nwater,nice,cumulative n,sw,si,time'
 open(55, file='pbe/moments.csv')
-write(55,*) 'time(s),n_soot(#/m^3),n_water(#/m^3),n_ice(#/m^3),r_i(nm),r_act(nm)'
+write(55,*) 'time(s),n_soot(#/m^3),n_amb(#/m^3),n_water(#/m^3),n_ice(#/m^3),r_i(nm),r_act(nm)'
 ! Integration
 
 ! Write initial moments
@@ -104,7 +106,7 @@ do i_step = 1,n_steps
   ! Calculate moments
   call pbe_moments(nsoot,moment,meansize)
 
-  call con_output(nsoot, nwater, nice, 33, time,i_step,nout_dt)
+  call con_output(nsoot,namb,nwater, nice, 33, time,i_step,nout_dt)
   call plume_var_output(22, time,i_step, nout_dt)
   call moments_output(nsoot, nwater, nice, 55, time, i_step, nout_dt)
 

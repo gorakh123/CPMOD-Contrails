@@ -8,8 +8,11 @@ Input data for Contrails
 563                              ! Jet initial temperature [K]
 1.59                                 ! Mixing line slope parameter G [Pa/K]
 
-17                                  ! Geometric mean radius of Soot particles
+17                                  ! Geometric mean radius of Soot particles [nm]
 1.55                                 ! Standard deviation of Soot particles
+15                                  ! Geometric mean radius of Ambient aerosols [nm]
+2.2                                 ! Standard deviation of Ambient aerosols
+6.d8                                ! ambient number conc                                    
 
 
 

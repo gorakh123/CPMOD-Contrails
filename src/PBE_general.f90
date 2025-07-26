@@ -45,6 +45,7 @@ double precision break_const
 double precision g_coeff1,g_coeff2
 double precision nuc1
 double precision N0
+double precision amb_N0
 
 integer m,grid_type
 integer i_gm,solver_pbe
@@ -75,7 +76,7 @@ double precision x_m, tau_m, r_0, epsilon
 double precision initial_temp, initial_velocity
 double precision T, p_wsat, p_isat, smi, smw, sw, si, rho, G, dTdt 
 double precision pvap_m, pvap, dpvapdt_m, pvap_mprev ! Need to decide how the water coupling is going to be done
-double precision mean_radius, std_radius
+double precision mean_radius, std_radius, mean_amb_radius, std_amb_radius
 double precision P_w, smw_prev ! according to Karcher et al 2015: ds/dt = P_w - L_w 
                           ! P_w - supersaturation forcing due to mxing
                           ! L_w - supersaturation sink due to condensation
@@ -290,6 +291,7 @@ subroutine contrail_read()
 !**********************************************************************************************
 
 use con_mod
+use pbe_mod, only: amb_N0
 
 implicit none 
 
@@ -313,15 +315,16 @@ read(40,*) G
 read(40,*)
 read(40,*) mean_radius
 read(40,*) std_radius
-close(40)
-
-write(*,*) 'Si:', amb_Si
+read(40,*) mean_amb_radius
+read(40,*) std_amb_radius
+read(40,*) amb_N0
+close(40) 
 
 end subroutine contrail_read
 
 !**********************************************************************************************
 
-subroutine pbe_init(ni)
+subroutine pbe_init(ni,ni_amb)
 
 !**********************************************************************************************
 !
@@ -343,7 +346,9 @@ use con_mod
 implicit none
 
 double precision, dimension(m), intent(inout) :: ni
+double precision, dimension(m), intent(inout) :: ni_amb
 double precision :: n_total
+double precision :: n_ambtotal
 
 integer i
 
@@ -381,19 +386,20 @@ else if (initdis==2) then
 else if (initdis==3) then
   ! Log normal
 n_total = 0
+n_ambtotal = 0
   !ni = (N0 / (3.d0 * v_m * sqrt(2.d0 * pi) * log(std_radius))) * exp((- log(v_m / mean_v)**2) / (18.d0 * log(std_radius)**2)) * dv
   do i = 1, m
-    ni(i) = N0 * exp(-0.5d0 * (log(v_m(i)/mean_radius) ** 2) /(log(std_radius)**2)) / (v_m(i) * log(std_radius) * sqrt(2.d0 * pi)) 
+    ni(i) = N0 * exp(-0.5d0 * (log(v_m(i)/mean_radius) ** 2) /(log(std_radius)**2)) / (v_m(i) * log(std_radius) * sqrt(2.d0 * pi))
+    ni_amb(i) = amb_N0 * exp(-0.5d0 * (log(v_m(i)/mean_amb_radius) ** 2) /(log(std_amb_radius)**2)) / (v_m(i) * log(std_amb_radius) * sqrt(2.d0 * pi))
     !write(*,*) exp(-0.5d0 * ((log(v_m(i)) - log(mean_radius)) ** 2) /(log(std_radius)**2))
     !write(*,*) 1.d0 / (v_m(i) * log(std_radius) * sqrt(2.d0 * pi)) 
     n_total = n_total + (ni(i) * dv(i))
+    n_ambtotal = n_ambtotal +(ni_amb(i) * dv(i))
     
   end do
-write(*,*) 'total n: ', n_total
-write(*,*) 'mean radius', mean_radius
-write(*,*) 'sigma radius', std_radius
+write(*,*) 'total n soot [#/m^3]: ', n_total
+write(*,*) 'total n ambient [#/m^3]: ', n_ambtotal
 
-!write(*,*) ni
 
 end if
 
@@ -717,7 +723,7 @@ end subroutine plume_var_output
 
 !**********************************************************************************************
 
-subroutine con_output(nsoot, nwater, nice, unit, time, n_time, n_output)
+subroutine con_output(nsoot, namb, nwater, nice, unit, time, n_time, n_output)
 
 !**********************************************************************************************
 ! Outputs contrail related data
@@ -737,16 +743,17 @@ double precision, intent(in) :: time
 integer, intent(in) :: n_time
 integer, intent(in) :: n_output
 double precision, dimension(m), intent(in) :: nsoot
+double precision, dimension(m), intent(in) :: namb
 double precision, dimension(m), intent(in) :: nwater
 double precision, dimension(m), intent(in) :: nice
 double precision :: niw_total !ice or water droplets
 character(len=100) :: data_fmt
-data_fmt = '(F16.2,",",E16.4,",",E16.4,",",E16.4,",",E16.4,",",F10.6,",",F10.6,",",F6.4)'
+data_fmt = '(F16.2,",",E16.4,",",E16.4,",",E16.4,",",E16.4,",",E16.4,",",F10.6,",",F10.6,",",F6.4)'
 niw_total = 0.d0
 if (mod(n_time,n_output)==0) then
   do i=1,m
     niw_total = niw_total + (nice(i) * dv(i)) + (nwater(i) * dv(i))
-    write(unit,data_fmt) v_m(i), nsoot(i), nwater(i), nice(i), niw_total, sw, si, time
+    write(unit,data_fmt) v_m(i), nsoot(i), namb(i), nwater(i), nice(i), niw_total, sw, si, time
   end do
 end if
 end subroutine con_output
