@@ -760,7 +760,7 @@ end subroutine con_output
 
 !**********************************************************************************************
 
-subroutine moments_output(nsoot, nwater, nice, unit, time, n_time, n_output)
+subroutine moments_output(nsoot, namb, nwater, nice, unit, time, n_time, n_output)
 
 !**********************************************************************************************
 ! Outputs zeroth moment (total number/number concentration of particles) &
@@ -774,6 +774,7 @@ subroutine moments_output(nsoot, nwater, nice, unit, time, n_time, n_output)
 
   implicit none
   double precision, dimension(m), intent(in) :: nsoot
+  double precision, dimension(m), intent(in) :: namb
   double precision, dimension(m), intent(in) :: nwater
   double precision, dimension(m), intent(in) :: nice
   integer, intent(in) :: unit
@@ -782,6 +783,7 @@ subroutine moments_output(nsoot, nwater, nice, unit, time, n_time, n_output)
   integer, intent(in) :: n_output
 
   double precision :: nsoot_total
+  double precision :: namb_total
   double precision :: nwater_total
   double precision :: nice_total
   double precision :: rice_total
@@ -794,6 +796,7 @@ subroutine moments_output(nsoot, nwater, nice, unit, time, n_time, n_output)
   character(len=100) :: data_fmt
 
   nsoot_total = 0.d0
+  namb_total = 0.d0
   nwater_total = 0.d0
   nice_total = 0.d0
   avg_rice = 0.d0
@@ -801,11 +804,12 @@ subroutine moments_output(nsoot, nwater, nice, unit, time, n_time, n_output)
   avg_ract = 0.d0
   ract_total = 0.d0
 
-  data_fmt = '(F6.4,",",E16.4,",",E16.4,",",E16.4,",",F12.4,",",F12.4)'
+  data_fmt = '(F6.4,",",E16.4,",",E16.4,",",E16.4,",",E16.4,",",F12.4,",",F12.4)'
   ! time, nsoot, nwater, nice, avg r
   if (mod(n_time, n_output)==0) then
     do i = 1,m
       nsoot_total = nsoot_total + (nsoot(i) * dv(i))
+      namb_total = namb_total + (namb(i) * dv(i))
       nwater_total = nwater_total + (nwater(i) * dv(i))
       nice_total = nice_total + (nice(i) * dv(i))
       rice_total = rice_total +  (nice(i)*dv(i)*v_m(i))
@@ -814,7 +818,7 @@ subroutine moments_output(nsoot, nwater, nice, unit, time, n_time, n_output)
     avg_rice = rice_total/nice_total
     avg_ract = ract_total/(nice_total+nwater_total)
 
-    write(unit,data_fmt) time, nsoot_total, nwater_total, nice_total, avg_rice, avg_ract
+    write(unit,data_fmt) time, nsoot_total, namb_total, nwater_total, nice_total, avg_rice, avg_ract
   end if
 end subroutine moments_output
 

@@ -106,9 +106,9 @@ do i_step = 1,n_steps
   ! Calculate moments
   call pbe_moments(nsoot,moment,meansize)
 
-  call con_output(nsoot,namb,nwater, nice, 33, time,i_step,nout_dt)
+  call con_output(nsoot, namb, nwater, nice, 33, time,i_step,nout_dt)
   call plume_var_output(22, time,i_step, nout_dt)
-  call moments_output(nsoot, nwater, nice, 55, time, i_step, nout_dt)
+  call moments_output(nsoot, namb, nwater, nice, 55, time, i_step, nout_dt)
 
   ! Write moments
   ! Write PSD
