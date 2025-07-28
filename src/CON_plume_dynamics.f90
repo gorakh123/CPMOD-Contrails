@@ -34,7 +34,7 @@ end subroutine set_mixing_timescale
 
 !**********************************************************************************************
 
-subroutine update_plume_variables(nsoot, nwater, nice, time, dt)
+subroutine update_plume_variables(nsoot, namb, nwater, nice, time, dt)
 
 !**********************************************************************************************
 ! 
@@ -62,6 +62,7 @@ double precision, intent(in) :: dt
 double precision, dimension(m), intent(inout) :: nwater
 double precision, dimension(m), intent(inout) :: nice
 double precision, dimension(m), intent(inout) :: nsoot
+double precision, dimension(m), intent(inout) :: namb
 double precision :: R = 287.d0 !Specific gas constant of air J/kgK
 
 
@@ -102,6 +103,7 @@ else
 end if 
 
 nsoot = (nsoot * amb_rho * dilution) / (amb_rhoprev * Dilution_prev)
+namb = (namb * amb_rho * dilution) / (amb_rhoprev * Dilution_prev)
 nwater = (nwater * amb_rho * dilution) / (amb_rhoprev * Dilution_prev)
 nice = (nice * amb_rho * dilution) / (amb_rhoprev * Dilution_prev)
 
@@ -122,7 +124,7 @@ end subroutine update_plume_variables
 
 !**********************************************************************************************
 
-subroutine droplet_activation(nsoot, nwater)
+subroutine droplet_activation(nsoot, namb, nwater)
 
 !**********************************************************************************************
 !
@@ -135,31 +137,37 @@ subroutine droplet_activation(nsoot, nwater)
 !
 !**********************************************************************************************
 
-use pbe_mod, only: m, v_m, rcore_array     
+use pbe_mod, only: m, v_m   
 use con_mod
 
 implicit none
 
 double precision, dimension(m), intent(inout) :: nsoot
+double precision, dimension(m), intent(inout) :: namb
 double precision, dimension(m), intent(inout) :: nwater 
 
-double precision :: activation_radius, kelvin_radius
-double precision :: kappa
+double precision :: activation_radius_soot, activation_radius_amb, kelvin_radius
+double precision :: kappa_soot, kappa_amb
 
 integer :: i
 
 kelvin_radius = 1 ! [nm]
-kappa = 0.005
-activation_radius = (kelvin_radius / (54.d0 * kappa)**(1.d0/3.d0)) * (sw ** (-2.d0/3.d0))
+kappa_soot = 0.005
+kappa_amb = 0.5
+activation_radius_soot = (kelvin_radius / (54.d0 * kappa_soot)**(1.d0/3.d0)) * (sw ** (-2.d0/3.d0))
+activation_radius_amb = (kelvin_radius / (54.d0 * kappa_amb)**(1.d0/3.d0)) * (sw ** (-2.d0/3.d0))
 
 do i = 1, m
 
-    if ((v_m(i) >= activation_radius).AND.(sw >= 0)) then
+    if ((v_m(i) >= activation_radius_amb).AND.(sw >= 0)) then
+        nwater(i) = nwater(i) + namb(i)
+        namb(i) = 0.d0
+    end if
+
+
+    if ((v_m(i) >= activation_radius_soot).AND.(sw >= 0)) then
         nwater(i) = nwater(i) + nsoot(i)
         nsoot(i) = 0.d0
-        if (nwater(i) >= 0.1d0) then
-            rcore_array(i) = v_m(i)
-        end if
     end if
 
 end do 

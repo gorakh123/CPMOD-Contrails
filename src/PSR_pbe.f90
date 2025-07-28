@@ -84,7 +84,7 @@ call set_mixing_timescale()
 do i_step = 1,n_steps
   
   ! update contrail plume variables
-  call update_plume_variables(nsoot, nwater, nice, time, dt)
+  call update_plume_variables(nsoot, namb, nwater, nice, time, dt)
   ! The following should be done if the kernel should be updated at each time step due to e.g. 
   ! temperature dependency
   
@@ -97,7 +97,7 @@ do i_step = 1,n_steps
   !Droplet activation and freezing
 
   call droplet_freeze(nwater, nice)
-  call droplet_activation(nsoot, nwater)  
+  call droplet_activation(nsoot, namb, nwater)  
 
   ! Integrate
   call pbe_integ(nwater,dt,1)
