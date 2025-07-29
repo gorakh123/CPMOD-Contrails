@@ -12,10 +12,11 @@ subroutine psr_pbe()
 
 implicit none
 
-double precision, allocatable :: nsoot(:)
-double precision, allocatable :: namb(:)
-double precision, allocatable :: nwater(:) 
-double precision, allocatable :: nice(:) 
+double precision, allocatable :: nsoot(:)   ! number concentration density array for soot aerosols
+double precision, allocatable :: namb(:)    ! number concentration density array for ambient aerosols
+double precision, allocatable :: nvola(:)    ! number concentration density array for volatile aerosols
+double precision, allocatable :: nwater(:)  ! number concentration density array for water droplets
+double precision, allocatable :: nice(:)    ! number concentration density array for ice particles
 
 double precision moment(0:1)
 double precision int_time,tin,meansize,dt,time
@@ -35,11 +36,13 @@ call contrail_read()
 
 allocate(nsoot(n_pbe_grid))
 allocate(namb(n_pbe_grid))
+allocate(nvola(n_pbe_grid))
 allocate(nwater(n_pbe_grid))
 allocate(nice(n_pbe_grid))
 
 nwater = 0.0
 nice= 0.0
+
 call pbe_grid()
 call pbe_init(nsoot, namb)
 

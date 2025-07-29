@@ -324,7 +324,7 @@ end subroutine contrail_read
 
 !**********************************************************************************************
 
-subroutine pbe_init(ni,ni_amb)
+subroutine pbe_init(ni,ni_amb,ni_vola)
 
 !**********************************************************************************************
 !
@@ -345,11 +345,13 @@ use con_mod
 
 implicit none
 
-double precision, dimension(m), intent(inout) :: ni
-double precision, dimension(m), intent(inout) :: ni_amb
+double precision, dimension(m), intent(inout) :: ni       ! used for soot
+double precision, dimension(m), intent(inout) :: ni_amb   ! ambient aerosols
+double precision, dimension(m), intent(inout) :: ni_vola  ! volatile aerosols
 double precision :: n_total
 double precision :: n_ambtotal
-
+double precision :: n_volatotal
+! todo: initialise grid and read mean and std for volatile aerosols
 integer i
 
 !----------------------------------------------------------------------------------------------

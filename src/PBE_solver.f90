@@ -126,18 +126,17 @@ double precision dn(m)
 double precision, intent(in) :: timestep
 
 double precision growth_source,growth_mass_source,params(1)
-double precision :: Lw_index, dpvapsink_index
+double precision :: dpvapsink_index
 double precision :: gterml, gtermr
-double precision :: Lw_total, dpvapsink_total 
+double precision :: dpvapsink_total 
 double precision :: nwsat
 double precision :: volH20 = 0.03d0 !nm**3
 
-double precision :: gnl, gnr
 
 integer index
 
 double precision :: kB = 1.380649d0 * 10.d0**(-23)
-integer, intent(in) :: ice_or_water
+integer, intent(in) :: ice_or_water ! 1 - water, 0 - ice
 
 !----------------------------------------------------------------------------------------------
 
@@ -160,48 +159,36 @@ end if
 
 ! Droplet Growth
 if ((sw>0.d0).AND.(ice_or_water==1)) then
-  Lw_total = 0
   dpvapsink_total = 0
-  !write(*,*) 'T ', 'sw ', 'thermal speed ', 'n_w,sat ', 'v(index) ', 'g_termr '
   do index = 1,m
-    call growth_tvd(ni,index,growth_source,ice_or_water,gterml,gtermr,nwsat, gnl, gnr)
+    call growth_tvd(ni,index,growth_source,ice_or_water,gterml,gtermr,nwsat)
     niprime(index) = niprime(index) + growth_source
-    Lw_index = ((4 * pi) / (volH20 * nwsat)) * (ni(index) *dv(index)) * (v_m(index)**2) * ((gterml + gtermr)*0.5D0)
     dpvapsink_index = ((4 * pi * p_wsat) / ((volH20) * nwsat)) * (ni(index) *dv(index)) * ((v_m(index))**2) * ((gterml + gtermr)*0.5D0) 
-    !write(*,*) Lw_index
 
-    if ((Lw_index == Lw_index).AND.(Lw_index>=0.d0)) then
-      Lw_total = Lw_total + Lw_index
-      dpvapsink_total = dpvapsink_total + dpvapsink_index
-      
+    if ((dpvapsink_index == dpvapsink_index).AND.(dpvapsink_index>=0.d0)) then
+      dpvapsink_total = dpvapsink_total + dpvapsink_index 
     end if
 
   end do
-  !write(*,*) 'water sink: ', dpvapsink_total
-  !write(*,*) 'Lw total: ', Lw_total, 'Pw :', P_w , 'nwsat: ', nwsat, 'volH20: ', volH20, 'last gterml: ', gterml
-  !sw = sw + (-Lw_total * timestep)
+
   pvap = pvap + (-dpvapsink_total * timestep)
-  !sw = pvap / p_wsat + 1
+
 end if
 
 ! Ice growth
 if ((si>0.d0).AND.(ice_or_water==0)) then
-  Lw_total = 0
   dpvapsink_total = 0
 
   do index = 1,m
-    call growth_tvd(ni,index,growth_source,ice_or_water,gterml,gtermr,nwsat, gnl, gnr)
+    call growth_tvd(ni,index,growth_source,ice_or_water,gterml,gtermr,nwsat)
     niprime(index) = niprime(index) + growth_source
-    Lw_index = ((4 * pi) / (volH20 * nwsat)) * (ni(index) *dv(index)) * (v_m(index)**2) * ((gterml + gtermr)*0.5D0) 
     dpvapsink_index = ((4 * pi * p_wsat) / ((volH20) * nwsat)) * (ni(index) *dv(index)) * ((v_m(index))**2) * ((gterml + gtermr)*0.5D0) 
 
-    if ((Lw_index == Lw_index).AND.(Lw_index>=0.d0)) then
-      Lw_total = Lw_total + Lw_index
+    if ((dpvapsink_index == dpvapsink_index).AND.(dpvapsink_index>=0.d0)) then
       dpvapsink_total = dpvapsink_total + dpvapsink_index
     end if
 
   end do
-  !write(*,*) 'ice sink: ', dpvapsink_total
   pvap = pvap + (-dpvapsink_total * timestep)
 
 end if
