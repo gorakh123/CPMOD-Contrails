@@ -718,7 +718,7 @@ integer, intent(in) :: n_output
 integer, intent(in) :: n_time
 
 if (mod(n_time, n_output) == 0) then
-  write(unit, *) T,',',smw,',',sw,',',si,',',amb_rho,',',time
+  write(unit, *) T,',',smw,',',sw,',',si,',',amb_rho,',',time,',',pvap
 end if
 end subroutine plume_var_output
 
