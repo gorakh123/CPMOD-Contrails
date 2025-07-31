@@ -65,6 +65,7 @@ double precision, dimension(m), intent(inout) :: nsoot
 double precision, dimension(m), intent(inout) :: namb
 double precision :: R = 287.d0 !Specific gas constant of air J/kgK
 
+amb_pvap = amb_Si * sat_pressure_i_func(amb_temp)
 
 beta = 0.9d0 
 
@@ -94,11 +95,13 @@ amb_rho = amb_p / (T * R)
 
 if (time == 0.d0) then
     sw = smw
+    si = pvap_m / p_isat - 1
     pvap = pvap_m
     Dilution_prev = dilution
     amb_rhoprev = amb_rho
+    si_prev = si
+    dpvapdt_m = 0.d0
 else
-    P_w = (smw - smw_prev) / dt 
     dpvapdt_m = (pvap_m - pvap_mprev) / dt
 end if 
 
@@ -113,11 +116,24 @@ smw_prev = smw
 pvap_mprev = pvap_m
 amb_rhoprev = amb_rho
 Dilution_prev = dilution
-
-sw = sw + (P_w * dt)
 pvap = pvap + (dpvapdt_m * dt)
+
+sw = pvap / p_wsat - 1.d0
+si = pvap / p_isat - 1.d0
+dsidt = (si - si_prev) / dt
+
+if ((dsidt < 0).AND.(amb_Si<1.d0).AND.(pvap < amb_pvap)) then
+    pvap = amb_pvap
+
+else if ((dsidt < 0).AND.(amb_Si>=1.d0).AND.(pvap < p_isat)) then
+    pvap = p_isat
+    
+end if
+
 sw = pvap / p_wsat - 1
 si = pvap / p_isat - 1
+
+si_prev = si
 
 
 end subroutine update_plume_variables

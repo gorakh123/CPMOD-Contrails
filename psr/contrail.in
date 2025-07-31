@@ -9,10 +9,10 @@ Input data for Contrails
 1.64                                 ! Mixing line slope parameter G [Pa/K]
 
 12.5                                  ! Geometric mean radius of Soot particles [nm]
-1.6                                 ! Standard deviation of Soot particles
+1.6                                 ! Standard deviation of Soot particles [nm]
 15                                  ! Geometric mean radius of Ambient aerosols [nm]
-2.2                                 ! Standard deviation of Ambient aerosols
-6.d8                                ! ambient number conc  [orig - 6.d8]                                  
-
-
+2.2                                 ! Standard deviation of Ambient aerosols [nm]
+6.d8                                ! ambient number conc  [orig - 6.d8] [#/m^3]                                  
+1.5d0                               ! vPM geometric mean radius [nm]
+1.3d0                               ! vPM standard deviation [nm]
 

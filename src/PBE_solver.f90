@@ -115,7 +115,8 @@ subroutine pbe_ydot(ni,niprime,timestep, ice_or_water)
 !**********************************************************************************************
 
 use pbe_mod
-use con_mod, only: sw, smw, si, P_w, pi, pvap, pvap_m, dpvapdt_m, p_wsat, T
+use con_mod, only: sw, si, pi, pvap, p_wsat, p_isat, amb_Si, amb_pvap, &
+ & dpvapsink_total, T, sat_pressure_i_func, dsidt, si_prev
 
 implicit none
 
@@ -128,7 +129,7 @@ double precision, intent(in) :: timestep
 double precision growth_source,growth_mass_source,params(1)
 double precision :: dpvapsink_index
 double precision :: gterml, gtermr
-double precision :: dpvapsink_total 
+!double precision :: dpvapsink_total 
 double precision :: nwsat
 double precision :: volH20 = 0.03d0 !nm**3
 
@@ -170,9 +171,15 @@ if ((sw>0.d0).AND.(ice_or_water==1)) then
     end if
 
   end do
-
   pvap = pvap + (-dpvapsink_total * timestep)
+  si = pvap / p_isat - 1
+  sw = pvap / p_wsat - 1
+  dsidt = (si - si_prev) / timestep
 
+  if ((dsidt < 0).AND.(amb_Si>=1.d0).AND.(pvap < p_isat)) then
+      write(*,*) 'Check 3'
+      pvap = p_isat
+  end if
 end if
 
 ! Ice growth
@@ -189,8 +196,25 @@ if ((si>0.d0).AND.(ice_or_water==0)) then
     end if
 
   end do
-  pvap = pvap + (-dpvapsink_total * timestep)
+ 
+  
 
+  pvap = pvap + (-dpvapsink_total * timestep)
+  si = pvap / p_isat - 1
+  sw = pvap / p_wsat - 1
+  dsidt = (si - si_prev) / timestep
+
+  if ((dsidt < 0).AND.(amb_Si>=1.d0).AND.(pvap < p_isat)) then
+      pvap = p_isat
+  end if
+  
+  
+
+  sw = pvap / p_wsat - 1
+  si = pvap / p_isat - 1
+  si_prev = si
+
+  
 end if
 
 

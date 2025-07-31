@@ -70,16 +70,16 @@ module con_mod
 !
 !**********************************************************************************************
 
-double precision amb_temp, amb_p, amb_rho, amb_pw, amb_Si
+double precision amb_temp, amb_p, amb_rho, amb_pw, amb_Si, amb_pvap
 double precision amb_rhoprev, Dilution_prev
 double precision x_m, tau_m, r_0, epsilon
 double precision initial_temp, initial_velocity
 double precision T, p_wsat, p_isat, smi, smw, sw, si, rho, G, dTdt 
 double precision pvap_m, pvap, dpvapdt_m, pvap_mprev ! Need to decide how the water coupling is going to be done
 double precision mean_radius, std_radius, mean_amb_radius, std_amb_radius
-double precision P_w, smw_prev ! according to Karcher et al 2015: ds/dt = P_w - L_w 
-                          ! P_w - supersaturation forcing due to mxing
-                          ! L_w - supersaturation sink due to condensation
+double precision smw_prev
+double precision :: dpvapsink_total = 0.d0
+double precision si_prev, dsidt
 double precision drdt, dsdt
 
 double precision :: pi = acos(-1.d0)
