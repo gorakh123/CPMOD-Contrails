@@ -37,7 +37,6 @@ double precision, allocatable, dimension(:) :: v
 double precision, allocatable, dimension(:) :: dv
 double precision, allocatable, dimension(:) :: v_m
 double precision, allocatable, dimension(:) :: nuc
-double precision, allocatable, dimension(:) :: rcore_array
 
 double precision v0,grid_lb,grid_rb
 double precision agg_kernel_const
@@ -46,6 +45,7 @@ double precision g_coeff1,g_coeff2
 double precision nuc1
 double precision N0
 double precision amb_N0
+double precision vola_N0
 
 integer m,grid_type
 integer i_gm,solver_pbe
@@ -77,7 +77,8 @@ double precision initial_temp, initial_velocity
 double precision T, p_wsat, p_isat, smi, smw, sw, si, rho, G, dTdt 
 double precision pvap_m, pvap, dpvapdt_m, pvap_mprev ! Need to decide how the water coupling is going to be done
 double precision mean_radius, std_radius, mean_amb_radius, std_amb_radius
-double precision smw_prev
+double precision mean_vola_radius, std_vola_radius
+double precision smw_prev, T_prev
 double precision :: dpvapsink_total = 0.d0
 double precision si_prev, dsidt
 double precision drdt, dsdt
@@ -291,7 +292,7 @@ subroutine contrail_read()
 !**********************************************************************************************
 
 use con_mod
-use pbe_mod, only: amb_N0
+use pbe_mod, only: amb_N0, vola_N0
 
 implicit none 
 
@@ -318,6 +319,9 @@ read(40,*) std_radius
 read(40,*) mean_amb_radius
 read(40,*) std_amb_radius
 read(40,*) amb_N0
+read(40,*) mean_vola_radius
+read(40,*) std_vola_radius
+read(40,*) vola_N0
 close(40) 
 
 end subroutine contrail_read
@@ -389,18 +393,22 @@ else if (initdis==3) then
   ! Log normal
 n_total = 0
 n_ambtotal = 0
+n_volatotal = 0
   !ni = (N0 / (3.d0 * v_m * sqrt(2.d0 * pi) * log(std_radius))) * exp((- log(v_m / mean_v)**2) / (18.d0 * log(std_radius)**2)) * dv
   do i = 1, m
     ni(i) = N0 * exp(-0.5d0 * (log(v_m(i)/mean_radius) ** 2) /(log(std_radius)**2)) / (v_m(i) * log(std_radius) * sqrt(2.d0 * pi))
     ni_amb(i) = amb_N0 * exp(-0.5d0 * (log(v_m(i)/mean_amb_radius) ** 2) /(log(std_amb_radius)**2)) / (v_m(i) * log(std_amb_radius) * sqrt(2.d0 * pi))
+    ni_vola(i) = vola_N0 * exp(-0.5d0 * (log(v_m(i)/mean_vola_radius) ** 2) /(log(std_vola_radius)**2)) / (v_m(i) * log(std_vola_radius) * sqrt(2.d0 * pi))
     !write(*,*) exp(-0.5d0 * ((log(v_m(i)) - log(mean_radius)) ** 2) /(log(std_radius)**2))
     !write(*,*) 1.d0 / (v_m(i) * log(std_radius) * sqrt(2.d0 * pi)) 
     n_total = n_total + (ni(i) * dv(i))
     n_ambtotal = n_ambtotal +(ni_amb(i) * dv(i))
+    n_volatotal = n_volatotal + (ni_vola(i) * dv(i))
     
   end do
 write(*,*) 'total n soot [#/m^3]: ', n_total
 write(*,*) 'total n ambient [#/m^3]: ', n_ambtotal
+write(*,*) 'total n volatile [#/m^3]: ', n_volatotal
 
 
 end if
@@ -448,7 +456,7 @@ integer i
 !----------------------------------------------------------------------------------------------
 
 ! Allocate arrays
-allocate(v(0:m),dv(m),v_m(m),nuc(m),rcore_array(m))
+allocate(v(0:m),dv(m),v_m(m),nuc(m))
 
 if (grid_type==1) then
 
@@ -725,7 +733,7 @@ end subroutine plume_var_output
 
 !**********************************************************************************************
 
-subroutine con_output(nsoot, namb, nwater, nice, unit, time, n_time, n_output)
+subroutine con_output(nsoot, namb, nvola, nwater, nice, unit, time, n_time, n_output)
 
 !**********************************************************************************************
 ! Outputs contrail related data
@@ -748,21 +756,22 @@ double precision, dimension(m), intent(in) :: nsoot
 double precision, dimension(m), intent(in) :: namb
 double precision, dimension(m), intent(in) :: nwater
 double precision, dimension(m), intent(in) :: nice
+double precision, dimension(m), intent(in) :: nvola
 double precision :: niw_total !ice or water droplets
 character(len=100) :: data_fmt
-data_fmt = '(F16.2,",",E16.4,",",E16.4,",",E16.4,",",E16.4,",",E16.4,",",F10.6,",",F10.6,",",F6.4)'
+data_fmt = '(F16.2,",",E16.4,",",E16.4,",",E16.4,",",E16.4,",",E16.4,",",E16.4,",",F10.6,",",F10.6,",",F6.4)'
 niw_total = 0.d0
 if (mod(n_time,n_output)==0) then
   do i=1,m
     niw_total = niw_total + (nice(i) * dv(i)) + (nwater(i) * dv(i))
-    write(unit,data_fmt) v_m(i), nsoot(i), namb(i), nwater(i), nice(i), niw_total, sw, si, time
+    write(unit,data_fmt) v_m(i), nsoot(i), namb(i), nvola(i), nwater(i), nice(i), niw_total, sw, si, time
   end do
 end if
 end subroutine con_output
 
 !**********************************************************************************************
 
-subroutine moments_output(nsoot, namb, nwater, nice, unit, time, n_time, n_output)
+subroutine moments_output(nsoot, namb, nvola, nwater, nice, unit, time, n_time, n_output)
 
 !**********************************************************************************************
 ! Outputs zeroth moment (total number/number concentration of particles) &
@@ -777,6 +786,7 @@ subroutine moments_output(nsoot, namb, nwater, nice, unit, time, n_time, n_outpu
   implicit none
   double precision, dimension(m), intent(in) :: nsoot
   double precision, dimension(m), intent(in) :: namb
+  double precision, dimension(m), intent(in) :: nvola
   double precision, dimension(m), intent(in) :: nwater
   double precision, dimension(m), intent(in) :: nice
   integer, intent(in) :: unit
@@ -786,6 +796,7 @@ subroutine moments_output(nsoot, namb, nwater, nice, unit, time, n_time, n_outpu
 
   double precision :: nsoot_total
   double precision :: namb_total
+  double precision :: nvola_total
   double precision :: nwater_total
   double precision :: nice_total
   double precision :: rice_total
@@ -799,6 +810,7 @@ subroutine moments_output(nsoot, namb, nwater, nice, unit, time, n_time, n_outpu
 
   nsoot_total = 0.d0
   namb_total = 0.d0
+  nvola_total = 0.d0
   nwater_total = 0.d0
   nice_total = 0.d0
   avg_rice = 0.d0
@@ -806,12 +818,13 @@ subroutine moments_output(nsoot, namb, nwater, nice, unit, time, n_time, n_outpu
   avg_ract = 0.d0
   ract_total = 0.d0
 
-  data_fmt = '(F6.4,",",E16.4,",",E16.4,",",E16.4,",",E16.4,",",F12.4,",",F12.4)'
+  data_fmt = '(F6.4,",",E16.4,",",E16.4,",",E16.4,",",E16.4,",",E16.4,",",F12.4,",",F12.4)'
   ! time, nsoot, nwater, nice, avg r
   if (mod(n_time, n_output)==0) then
     do i = 1,m
       nsoot_total = nsoot_total + (nsoot(i) * dv(i))
       namb_total = namb_total + (namb(i) * dv(i))
+      nvola_total = nvola_total + (nvola(i) * dv(i))
       nwater_total = nwater_total + (nwater(i) * dv(i))
       nice_total = nice_total + (nice(i) * dv(i))
       rice_total = rice_total +  (nice(i)*dv(i)*v_m(i))
@@ -820,7 +833,7 @@ subroutine moments_output(nsoot, namb, nwater, nice, unit, time, n_time, n_outpu
     avg_rice = rice_total/nice_total
     avg_ract = ract_total/(nice_total+nwater_total)
 
-    write(unit,data_fmt) time, nsoot_total, namb_total, nwater_total, nice_total, avg_rice, avg_ract
+    write(unit,data_fmt) time, nsoot_total, namb_total, nvola_total, nwater_total, nice_total, avg_rice, avg_ract
   end if
 end subroutine moments_output
 

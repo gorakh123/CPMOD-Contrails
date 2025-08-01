@@ -1,8 +1,8 @@
 PSR INPUT DATA
 
-2.d0                            ! Integration time
+2.0d0                            ! Integration time
 1.d-4                           ! Time step
 0                               ! Kernel update on/off
 0                               ! Print self-preserving distribution
 100                             ! Interval for write-up
-0.005d0                          ! Output timestep
+0.01d0                          ! Output timestep

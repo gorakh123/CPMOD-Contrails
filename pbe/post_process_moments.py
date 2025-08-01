@@ -45,7 +45,7 @@ ax.plot(
 
 ax.set_xlabel("Time (s)")
 ax.set_ylabel("number concentration (#/m^3)")
-ax.set_ylim(0,1e12)
+#ax.set_ylim(0,1e14)
 ax.grid()
 
 plt.legend()

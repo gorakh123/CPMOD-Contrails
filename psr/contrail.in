@@ -1,18 +1,19 @@
 Input data for Contrails
 
-25000.d0                           ! Ambient pressure [Pa]
-220.d0                              ! Ambient temperature [K]
-1.d0                                 ! Ambient Saturation ratio w.r.t ice [-]
+22919.5d0                           ! Ambient pressure [Pa]
+215.d0                              ! Ambient temperature [K]
+1.1d0                                 ! Ambient Saturation ratio w.r.t ice [-]
 0.5                               ! Jet radius [m]
 400                               ! Jet initial velocity [m/s]
 600                              ! Jet initial temperature [K]
 1.64                                 ! Mixing line slope parameter G [Pa/K]
 
-12.5                                  ! Geometric mean radius of Soot particles [nm]
-1.6                                 ! Standard deviation of Soot particles [nm]
+17.5                                  ! Geometric mean radius of Soot particles [nm]
+2                                 ! Standard deviation of Soot particles [nm]
 15                                  ! Geometric mean radius of Ambient aerosols [nm]
 2.2                                 ! Standard deviation of Ambient aerosols [nm]
 6.d8                                ! ambient number conc  [orig - 6.d8] [#/m^3]                                  
-1.5d0                               ! vPM geometric mean radius [nm]
+1.25d0                               ! vPM geometric mean radius [nm]
 1.3d0                               ! vPM standard deviation [nm]
+1.0455d14                          ! vPM number concentration [#/m^3] (10^17 EI) 2.2183d14 1.0455d14 
 
